@@ -303,11 +303,11 @@ def run_phase3():
 
         # ── 5a. Rule-based Normalization (no AI cost) ──────────────────
         norm_val = normalize_text(raw) if raw else ""
-        norm_col_letter = gspread.utils.rowcol_to_a1(sheet_row_num, col_map[NORM_COLUMN] + 1)[:-1]
         if norm_val and not cell(row, col_map, NORM_COLUMN):
+            norm_cell_address = gspread.utils.rowcol_to_a1(sheet_row_num, col_map[NORM_COLUMN] + 1)
             try:
                 sheet.update(
-                    f"{norm_col_letter}{sheet_row_num}",
+                    norm_cell_address,
                     [[norm_val]],
                     value_input_option="USER_ENTERED"
                 )
@@ -334,10 +334,10 @@ def run_phase3():
             col_idx = col_map.get(col_name, -1)
             if col_idx == -1:
                 continue
-            col_letter = gspread.utils.rowcol_to_a1(sheet_row_num, col_idx + 1)[:-1]
+            cell_address = gspread.utils.rowcol_to_a1(sheet_row_num, col_idx + 1)
             try:
                 sheet.update(
-                    f"{col_letter}{sheet_row_num}",
+                    cell_address,
                     [[value]],
                     value_input_option="USER_ENTERED"
                 )

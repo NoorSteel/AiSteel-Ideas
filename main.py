@@ -12,6 +12,19 @@ from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
 from normalization_layer import normalize_text
 from sheet_guard import safe_worksheet, SheetWriteProtectionError
+import time
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    from openai import OpenAI
+    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+except ImportError:
+    openai_client = None
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -367,7 +380,9 @@ def get_column_mapping(sheet):
         "Transcript": ["Transcript", "transcript", "متن صدا", "transcription"],
         "Language": ["Language", "language", "زبان"],
         "Transcription Status": ["Transcription Status", "TranscriptionStatus", "وضعیت متنی‌سازی", "transcription_status"],
-        "Normalized Content": ["Normalized Content", "NormalizedContent", "normalized_content", "متن نرمال‌شده", "متن نرمال شده"]
+        "Normalized Content": ["Normalized Content", "NormalizedContent", "normalized_content", "متن نرمال‌شده", "متن نرمال شده"],
+        "Transcription": ["Transcription", "transcription", "بهینه‌سازی شده"],
+        "Status": ["Status", "status", "وضعیت"]
     }
     
     # Optional columns from user's template to enrich if present
@@ -414,6 +429,50 @@ def get_column_mapping(sheet):
         logger.info(f"Google Sheets headers initialized/updated: {headers}")
         
     return mapping, len(headers)
+
+# The optimized system prompt containing specialized team names and metal terms
+SYSTEM_PROMPT = """تو یک هوش مصنوعی ویراستار و متخصص در حوزه صنعت آهن و فولاد هستی.
+متن زیر خروجی خام تبدیل گفتار به نوشتار (STT) از یک وویس واتس‌اپ یا یک پیام متنی است. 
+
+وظیفه تو این است که بدون تغییر در معنا، مفهوم و اطلاعات اصلی پیام:
+1. غلط‌های املایی ناشی از تلفظ یا اشتباهات صوتی را اصلاح کنی (مثلاً "میل گرد" به "میلگرد"، "تیر آهن" به "تیرآهن" یا اصطلاحات متالورژی).
+2. اسامی خاص اعضای تیم و همکاران را شناسایی کرده و املای صحیح آن‌ها را دقیقاً مطابق با لیست زیر ثبت کنی (از ثبت املای عامیانه، صوتیِ اشتباه یا فینگلیش خودداری شود):
+   - محمدرضا ذاکری
+   - محمد خشنودی
+   - عرفان
+   - آیدا
+   - نگین
+   - محمدعلی
+3. علائم نگارشی (نقطه، ویرگول، علامت سوال و ...) را به درستی قرار دهی تا متن کاملاً خوانا شود.
+4. کلمات پرکننده عامیانه، جملات زائد و تکرارهای اضافی صحبت کردن (مانند "اممم"، "مثلا"، "در واقع"، مکث‌های بیهوده) را حذف کنی.
+5. هرگونه ساختار لیست‌بندی (مانند بولِت‌پوینت، خط تیره، شماره‌گذاری و استایل‌های لیستی) را حذف کرده و کل متن را به صورت یک پاراگراف روان، پیوسته، منسجم و یک‌دست بازنویسی کنی. کل پیام باید به شکل پاراگراف متنی ارائه شود.
+6. اصطلاحات انگلیسی یا استارتاپی که فینگلیش یا با املای نادرست نوشته شده‌اند را اصلاح کنی.
+
+پاسخ تو باید فقط و فقط شامل متن اصلاح‌شده و نهایی باشد که به صورت یک پاراگراف یک‌دست است، و هیچ توضیح اضافی یا عنوان دیگری ننویسی.
+
+متن ورودی:
+" {text} "
+
+متن اصلاح‌شده و نهایی برای ثبت در گوگل شیت:"""
+
+def call_ai_editor(text: str) -> str:
+    """Calls OpenAI GPT with the optimized Node1 system prompt to clean the text."""
+    if not text or len(text.strip()) < 2 or openai_client is None:
+        return ""
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": SYSTEM_PROMPT.format(text=text)},
+            ],
+            temperature=0.1,
+            max_tokens=500,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"  OpenAI API Error in call_ai_editor: {e}")
+        return ""
 
 def process_files():
     """Main execution loop to find, parse, and upload WhatsApp chats."""
@@ -585,6 +644,13 @@ def process_files():
                 # Generate unique ID
                 msg_id = uuid.uuid4().hex
                 
+                # Perform AI Node1 text optimization on-the-fly
+                optimized_text = ""
+                if content_for_hash and len(content_for_hash.strip()) >= 2:
+                    optimized_text = call_ai_editor(content_for_hash)
+                    # Polite rate-limiting between API calls
+                    time.sleep(0.5)
+
                 # Build Row according to dynamic column mapping
                 row_data = [""] * max_cols
                 row_data[mapping["ID"] - 1] = msg_id
@@ -596,6 +662,10 @@ def process_files():
                 row_data[mapping["Message Hash"] - 1] = msg_hash
                 row_data[mapping["Import Timestamp"] - 1] = import_time
                 row_data[mapping["Source"] - 1] = source_val
+                
+                # AI Optimized columns
+                row_data[mapping["Transcription"] - 1] = optimized_text
+                row_data[mapping["Status"] - 1] = "node1" if optimized_text else ""
                 
                 # Voice metadata fields
                 row_data[mapping["Audio File"] - 1] = audio_filename if audio_filename else ""
