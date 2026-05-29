@@ -1,7 +1,36 @@
-/* HSL Premium Steel Light Color System */
+/* Dynamic HSL Dual-Theme Steel Color System */
 :root {
+    /* Dark Theme Variables (default) */
+    --bg-metal: #0d1117;
+    --bg-metal-light: rgba(22, 27, 34, 0.85);
+    --border-metal: rgba(255, 255, 255, 0.08);
+    --border-metal-glow: rgba(0, 150, 255, 0.25);
+    
+    --primary: #0078ff;
+    --primary-glow: rgba(0, 120, 255, 0.2);
+    --primary-gradient: linear-gradient(135deg, #0078ff 0%, #00c6ff 100%);
+    
+    --steel-gray: #c9d1d9;
+    --steel-blue: #58a6ff;
+    --steel-bright: #f0f6fc;
+    
+    --success: #39d353;
+    --danger: #ff7b72;
+    --warning: #f1e05a;
+    
+    --glass-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    --audio-bg: rgba(13, 17, 23, 0.4);
+    --input-bg: rgba(13, 17, 23, 0.8);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+    
+    --font-vazir: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-outfit: 'Outfit', 'Inter', sans-serif;
+}
+
+body.light-theme {
+    /* Light Theme Variables */
     --bg-metal: #f1f3f7;               /* Soft premium light-steel background */
-    --bg-metal-light: #ffffff;         /* Pure white card backgrounds */
+    --bg-metal-light: rgba(255, 255, 255, 0.85); /* Pure white card backgrounds */
     --border-metal: rgba(0, 0, 0, 0.08); /* Clean subtle dark border */
     --border-metal-glow: rgba(0, 102, 214, 0.12);
     
@@ -17,8 +46,10 @@
     --danger: #cf222e;                 /* Clean red for failure alerts */
     --warning: #9a6700;                /* Golden warning badge color */
     
-    --font-vazir: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-outfit: 'Outfit', 'Inter', sans-serif;
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --audio-bg: #f8f9fa;
+    --input-bg: #ffffff;
+    --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 }
 
 /* Global Reset & High Density Base Styling */
@@ -27,7 +58,7 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 body {
@@ -38,6 +69,7 @@ body {
     min-height: 100vh;
     font-size: 13px;
     font-weight: 400;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 /* Custom Scrollbars */
@@ -49,7 +81,7 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -58,16 +90,17 @@ body {
 
 /* Utilities */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--bg-metal-light);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--border-metal);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--glass-shadow);
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .text-gradient-steel {
-    background: linear-gradient(135deg, #212529 0%, #495057 100%);
+    background: linear-gradient(135deg, var(--steel-bright) 0%, var(--steel-gray) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -84,10 +117,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: radial-gradient(circle at top right, rgba(0, 120, 255, 0.05) 0%, transparent 60%),
+                radial-gradient(circle at bottom left, rgba(0, 198, 255, 0.03) 0%, transparent 60%),
+                var(--bg-metal);
+    padding: 16px;
+    transition: background-color 0.3s;
+}
+
+body.light-theme .login-container {
     background: radial-gradient(circle at top right, rgba(0, 102, 214, 0.05) 0%, transparent 60%),
                 radial-gradient(circle at bottom left, rgba(0, 136, 204, 0.03) 0%, transparent 60%),
                 var(--bg-metal);
-    padding: 16px;
 }
 
 .login-card {
@@ -119,7 +159,7 @@ body {
 
 .login-header p {
     font-size: 12px;
-    color: #6a737d;
+    color: var(--steel-gray);
     text-align: center;
     margin-bottom: 24px;
 }
@@ -134,7 +174,7 @@ body {
     font-size: 11px;
     font-weight: 500;
     margin-bottom: 6px;
-    color: #6a737d;
+    color: var(--steel-gray);
     text-align: right;
 }
 
@@ -155,7 +195,7 @@ body {
 .form-input {
     width: 100%;
     padding: 8px 36px 8px 12px;
-    background: #ffffff;
+    background: var(--input-bg);
     border: 1px solid var(--border-metal);
     border-radius: 6px;
     color: var(--steel-bright);
@@ -245,7 +285,7 @@ body {
 }
 
 .btn-icon {
-    background: #ffffff;
+    background: var(--bg-metal-light);
     border: 1px solid var(--border-metal);
     color: var(--steel-gray);
     width: 28px;
@@ -260,9 +300,9 @@ body {
 }
 
 .btn-icon:hover {
-    background: rgba(207, 34, 46, 0.05);
-    border-color: rgba(207, 34, 46, 0.2);
-    color: var(--danger);
+    background: rgba(0, 120, 255, 0.08);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 /* Main Stats Grid */
@@ -300,14 +340,26 @@ body {
 
 .stat-icon.total {
     background: rgba(0, 86, 179, 0.05);
-    color: var(--primary);
+    color: var(--steel-blue);
     border: 1px solid rgba(0, 86, 179, 0.1);
+}
+
+body:not(.light-theme) .stat-icon.total {
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--steel-blue);
+    border: 1px solid rgba(88, 166, 255, 0.2);
 }
 
 .stat-icon.audio {
     background: rgba(0, 136, 204, 0.05);
-    color: #0088cc;
+    color: var(--primary);
     border: 1px solid rgba(0, 136, 204, 0.1);
+}
+
+body:not(.light-theme) .stat-icon.audio {
+    background: rgba(0, 120, 255, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(0, 120, 255, 0.2);
 }
 
 .stat-icon.success {
@@ -316,16 +368,28 @@ body {
     border: 1px solid rgba(26, 127, 55, 0.1);
 }
 
+body:not(.light-theme) .stat-icon.success {
+    background: rgba(57, 211, 83, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(57, 211, 83, 0.2);
+}
+
 .stat-icon.duration {
     background: rgba(154, 103, 0, 0.05);
     color: var(--warning);
     border: 1px solid rgba(154, 103, 0, 0.1);
 }
 
+body:not(.light-theme) .stat-icon.duration {
+    background: rgba(241, 224, 90, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(241, 224, 90, 0.2);
+}
+
 .stat-info h3 {
     font-size: 11px;
     font-weight: 500;
-    color: #6a737d;
+    color: var(--steel-gray);
     margin-bottom: 2px;
 }
 
@@ -356,7 +420,7 @@ body {
 .search-input {
     width: 100%;
     padding: 7px 36px 7px 12px;
-    background: #ffffff;
+    background: var(--input-bg);
     border: 1px solid var(--border-metal);
     border-radius: 6px;
     color: var(--steel-bright);
@@ -388,7 +452,7 @@ body {
 
 .filter-btn {
     padding: 5px 12px;
-    background: #ffffff;
+    background: var(--bg-metal-light);
     border: 1px solid var(--border-metal);
     border-radius: 6px;
     color: var(--steel-gray);
@@ -403,9 +467,9 @@ body {
 }
 
 .filter-btn.active {
-    background: rgba(0, 86, 179, 0.08);
+    background: rgba(0, 120, 255, 0.08);
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--steel-blue);
 }
 
 /* Grid & High-Density Record Cards */
@@ -422,7 +486,7 @@ body {
 }
 
 .record-card:hover {
-    border-color: #0088cc;
+    border-color: var(--steel-blue);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -443,7 +507,7 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0056b3 0%, #0088cc 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--steel-blue) 100%);
     color: #ffffff;
     font-weight: 500;
     font-family: var(--font-outfit);
@@ -464,7 +528,7 @@ body {
     align-items: center;
     gap: 10px;
     font-size: 11px;
-    color: #6a737d;
+    color: var(--steel-gray);
 }
 
 .source-badge {
@@ -475,15 +539,21 @@ body {
 }
 
 .source-badge.text {
-    background: rgba(0, 86, 179, 0.05);
-    color: var(--primary);
-    border: 1px solid rgba(0, 86, 179, 0.1);
+    background: rgba(0, 120, 255, 0.05);
+    color: var(--steel-blue);
+    border: 1px solid rgba(0, 120, 255, 0.1);
 }
 
 .source-badge.voice {
     background: rgba(163, 113, 247, 0.05);
     color: #8a63d2;
     border: 1px solid rgba(163, 113, 247, 0.15);
+}
+
+body:not(.light-theme) .source-badge.voice {
+    background: rgba(163, 113, 247, 0.1);
+    color: #d2a8ff;
+    border: 1px solid rgba(163, 113, 247, 0.2);
 }
 
 .card-body {
@@ -496,9 +566,9 @@ body {
 
 /* Steel Keyword Tag Highlight styling */
 .highlight-tag {
-    background: rgba(0, 86, 179, 0.08);
-    border: 1px solid rgba(0, 86, 179, 0.15);
-    color: var(--primary);
+    background: rgba(0, 120, 255, 0.08);
+    border: 1px solid rgba(0, 120, 255, 0.15);
+    color: var(--steel-blue);
     padding: 0 4px;
     border-radius: 4px;
     font-weight: 500;
@@ -509,7 +579,7 @@ body {
 .audio-player-box {
     margin-top: 8px;
     padding: 6px 12px;
-    background: #f8f9fa;
+    background: var(--audio-bg);
     border: 1px solid var(--border-metal);
     border-radius: 6px;
     display: flex;
@@ -533,7 +603,7 @@ body {
 }
 
 .play-btn:hover {
-    background: #004494;
+    transform: scale(1.05);
 }
 
 .audio-track-info {
@@ -546,13 +616,13 @@ body {
 .audio-file-name {
     font-family: var(--font-outfit);
     font-size: 10px;
-    color: #6a737d;
+    color: var(--steel-gray);
     text-align: left;
 }
 
 .audio-waveform-fallback {
     height: 4px;
-    background: #e1e4e8;
+    background: rgba(128, 128, 128, 0.2);
     border-radius: 2px;
     position: relative;
     overflow: hidden;
@@ -571,7 +641,7 @@ body {
 .audio-duration {
     font-family: var(--font-outfit);
     font-size: 11px;
-    color: var(--primary);
+    color: var(--steel-blue);
 }
 
 /* Loading Box Spinner */
@@ -587,7 +657,7 @@ body {
 .spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid rgba(0, 0, 0, 0.05);
+    border: 3px solid rgba(128, 128, 128, 0.1);
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -626,6 +696,21 @@ body {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-4px); }
     75% { transform: translateX(4px); }
+}
+
+/* Theme Switcher specific styles */
+.theme-toggle-btn {
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle-btn i {
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover i {
+    transform: rotate(20deg);
 }
 
 /* Responsive adjustments */

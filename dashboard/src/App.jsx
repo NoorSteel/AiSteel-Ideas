@@ -78,6 +78,22 @@ function highlightKeywords(text) {
 }
 
 export default function App() {
+  // Theme Switching State
+  const [theme, setTheme] = useState(localStorage.getItem('aisteel_theme') || 'dark');
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    localStorage.setItem('aisteel_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem('aisteel_auth') === 'true'
@@ -238,6 +254,9 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="login-container">
+        <button className="btn-icon theme-toggle-btn" onClick={toggleTheme} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10 }} title={theme === 'dark' ? 'پوسته روشن' : 'پوسته تاریک'}>
+          <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+        </button>
         <div className="login-card glass-panel">
           <div className="login-logo-container">
             <img src={logoUrl} alt="AiSteel Logo" className="login-logo" />
@@ -304,6 +323,9 @@ export default function App() {
         <div className="navbar-actions">
           <button className="btn-icon" onClick={handleLogout} title="خروج از حساب">
             <i className="fas fa-sign-out-alt"></i>
+          </button>
+          <button className="btn-icon theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'پوسته روشن' : 'پوسته تاریک'}>
+            <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
           </button>
           <span className="sender-name">کاربر: {user}</span>
         </div>
