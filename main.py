@@ -136,18 +136,19 @@ def extract_audio_filename(content: str) -> str:
 
 def should_skip_message(content: str) -> bool:
     """
-    Filters out messages that are clearly photos, videos, stickers, documents,
-    OR are simple uninformative conversational expressions (e.g. بله, چشم, حتما).
-    Preserves text messages with actual content and audio/voice files.
-    Also drops short filler/meaningless queries, bot stats, and WhatsApp system logs.
-    Supports robust space-normalization and unicode cleaning.
+    Refined, extremely safe filter. Only filters out:
+    1. WhatsApp system notifications
+    2. Bot domain counts (e.g. AiSteel.it.com 55)
+    3. Standalone URLs
+    4. WhatsApp media omitted logs
+    5. Single name questions (e.g. عرفان ؟؟)
+    Keeps all other valid conversational short messages (e.g. 38 درهم, بخرم؟, این خوبه).
     """
     if not content:
         return True
         
     # Standardize spaces and remove directional marks
     content_clean = content.strip().replace('\u200e', '').replace('\u200f', '').replace('\u202f', ' ').replace('\u200b', '')
-    # Replace any multi-spaces/tabs/newlines with a single space for uniform checks
     content_norm = re.sub(r'[\s\xa0]+', ' ', content_clean).strip().lower()
     
     # If it is a voice note/audio file, do NOT skip it!
@@ -159,21 +160,21 @@ def should_skip_message(content: str) -> bool:
         "added you", "created this group", "joined using an invite link",
         "changed this group's icon", "changed the subject", "left", "invited",
         "changed their phone number", "turned on messages", "waiting for this message",
-        "changed the group description"
+        "changed the group description", "messages and calls are end-to-end encrypted"
     ]
     if any(keyword in content_norm for keyword in system_keywords):
         return True
         
-    # 2. Skip bot stats, domain queries, or lists of domains
-    # e.g., aisteel.it.com 55, aisteel.ae 125, aisteel.ai 719, or aisteel.com
-    if re.search(r"aisteel\s*\.\s*[a-z0-9]+([\.-][a-z0-9]+)*", content_norm, re.IGNORECASE):
+    # 2. Skip bot count statistics (e.g. AiSteel.it.com 55)
+    # Only skips if it matches domain followed by counts/numbers
+    if re.search(r"aisteel\s*\.\s*[a-z0-9]+([\.-][a-z0-9]+)*\s+\d+", content_norm, re.IGNORECASE):
         return True
         
     # 3. Skip standalone URLs
     if re.match(r"^https?://[^\s]+$", content_norm, re.IGNORECASE):
         return True
-    
-    # 4. Skip standard photo, video, sticker, document notifications
+        
+    # 4. Skip standard WhatsApp media omitted placeholders
     skip_keywords = [
         "image omitted", "photo omitted", "video omitted", "sticker omitted", "gif omitted",
         "document omitted", "contact card omitted", "audio omitted",
@@ -187,42 +188,20 @@ def should_skip_message(content: str) -> bool:
     if re.search(r"<attached:\s*([^>]+)>", content_norm):
         return True
         
-    # 5. Skip very short filler/meaningless expressions (Persian and English fillers)
-    # Remove punctuation for clean matching
-    normalized_content = re.sub(r'[^\w\s\u0600-\u06FF]', ' ', content_norm)
-    words = [w for w in normalized_content.split() if w]
-    
-    fillers = {
-        "بله", "چشم", "حتما", "باشه", "سلام", "ممنون", "تشکر", "خوبید", "مرسی", "سپاس", "اوکی", "حله", "آره",
-        "خوبم", "ممنونم", "مرسی ممنون", "انشالله", "انشأالله", "انشاالله", "یاعلی", "یا علی", "خب", "خوب",
-        "شما", "من", "ما", "آنها", "او", "ایشان", "این", "آن", "چه", "چطور", "چرا", "کی", "کجا", "کیه",
-        "yes", "ok", "okey", "sure", "thanks", "thank you", "hello", "hi", "deal", "yep", "yup"
-    }
-    
-    if len(words) == 1 and words[0] in fillers:
-        return True
-        
-    # 6. Skip short/meaningless messages lacking steel industry keywords
-    steel_keywords = [
-        "تیرآهن", "تیر آهن", "ميلگرد", "میلگرد", "میل گرد", "استیل", "آهن", "پروفیل", "لوله", 
-        "نبشی", "خرید", "فروش", "قیمت", "تن", "بار", "ورق", "قوطی", "شمش", "ناودانی", "هاش", 
-        "سپری", "سیم", "مفتول", "تسمه", "زانو", "اتصالات", "شیرآلات", "فولاد", "سفارش", "تخفیف",
-        "پیش‌فاکتور", "فاکتور", "وزن", "ضخامت", "ابعاد", "سایز", "شاخه", "کیلو", "کیلوگرم", "آهن‌آلات"
-    ]
-    has_steel_keyword = any(kw in content_norm for kw in steel_keywords)
-    
-    # Count characters (excluding spaces and punctuation)
-    alphanumeric_only = re.sub(r'[^\w\u0600-\u06FF]', '', content_norm).strip()
-    
-    if not has_steel_keyword:
-        # Match questions consisting of name/short text only (e.g. عرفان ؟؟)
-        if '؟' in content_clean or '?' in content_clean:
+    # 5. Skip single name/short filler questions (e.g. "عرفان ؟؟" or "محمد خوشنودي ؟؟")
+    # If it ends with a question mark and is short, check if it has trade context
+    if '؟' in content_clean or '?' in content_clean:
+        stripped = re.sub(r'[؟\?\s]', '', content_clean).strip()
+        steel_keywords = [
+            "تیرآهن", "تیر آهن", "ميلگرد", "میلگرد", "میل گرد", "استیل", "آهن", "پروفیل", "لوله", 
+            "نبشی", "خرید", "فروش", "قیمت", "تن", "بار", "ورق", "قوطی", "شمش", "ناودانی", "هاش", 
+            "سپری", "سیم", "مفتول", "تسمه", "زانو", "اتصالات", "شیرآلات", "فولاد", "سفارش", "تخفیف",
+            "درهم", "درم", "تومان", "ریال", "موجود", "موجوده", "بخر", "بخرم"
+        ]
+        has_steel = any(kw in content_norm for kw in steel_keywords)
+        if len(stripped) < 12 and not has_steel:
             return True
-        if len(alphanumeric_only) < 12:
-            return True
-        if len(words) <= 2:
-            return True
-        
+            
     return False
 
 def extract_audio_from_zip(zip_path: str, filename: str, output_dir: str) -> str:
