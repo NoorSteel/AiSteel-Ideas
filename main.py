@@ -10,6 +10,7 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
+from normalization_layer import normalize_text
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -385,7 +386,8 @@ def get_column_mapping(sheet):
         "Duration": ["Duration", "duration", "مدت زمان", "ثانیه"],
         "Transcript": ["Transcript", "transcript", "متن صدا", "transcription"],
         "Language": ["Language", "language", "زبان"],
-        "Transcription Status": ["Transcription Status", "TranscriptionStatus", "وضعیت متنی‌سازی", "transcription_status"]
+        "Transcription Status": ["Transcription Status", "TranscriptionStatus", "وضعیت متنی‌سازی", "transcription_status"],
+        "Normalized Content": ["Normalized Content", "NormalizedContent", "normalized_content", "متن نرمال‌شده", "متن نرمال شده"]
     }
     
     # Optional columns from user's template to enrich if present
@@ -610,6 +612,7 @@ def process_files():
                 row_data[mapping["Time"] - 1] = msg["time"]
                 row_data[mapping["Created By"] - 1] = msg["sender"]
                 row_data[mapping["Raw Content"] - 1] = content_for_hash
+                row_data[mapping["Normalized Content"] - 1] = normalize_text(content_for_hash)
                 row_data[mapping["Message Hash"] - 1] = msg_hash
                 row_data[mapping["Import Timestamp"] - 1] = import_time
                 row_data[mapping["Source"] - 1] = source_val
