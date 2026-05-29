@@ -1,0 +1,21 @@
+# Local Credentials & Secrets
+credentials.json
+.env
+.env.*
+
+# Temporary Audio Files & Outputs
+temp_audio/
+temp_first_chars.txt
+temp_parsed_out.txt
+sheet_rows.txt
+
+# Python cache & IDE files
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
+.idea/
+
+# Local Logs & Reports
+logs/*.log
+logs/report_*.txt
