@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import logoUrl from './assets/logo.png';
 
 // Credentials Configuration
 const VALID_USERNAME = 'admin';
