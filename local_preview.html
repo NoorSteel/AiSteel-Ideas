@@ -852,7 +852,7 @@ body:not(.light-theme) .source-badge.voice {
                         mapped[key] = item[key] !== null && item[key] !== undefined ? String(item[key]) : '';
                     });
                     return mapped;
-                }).filter(item => item.ID || item.Date);
+                }).filter(item => (item.ID || item.Date) && !isMeaninglessMessage(item['Raw Content']));
                 
                 state.records.reverse();
                 
@@ -863,6 +863,98 @@ body:not(.light-theme) .source-badge.voice {
                 state.loading = false;
                 render();
             }
+        }
+
+        function isMeaninglessMessage(content) {
+            if (!content) return true;
+            
+            // Standardize spaces and remove directional marks
+            const clean = content.trim().replace(/[\u200e\u200f\u200b]/g, '');
+            // Replace multi-spaces/tabs/newlines and non-breaking space (\xa0 / \u00a0) with a single space
+            const contentNorm = clean.replace(/[\s\u00a0\u202f]+/g, ' ').trim().toLowerCase();
+            
+            // 1. WhatsApp system notifications
+            const systemKeywords = [
+                'added you',
+                'created this group',
+                'joined using an invite link',
+                'changed this group\'s icon',
+                'changed the subject',
+                'left',
+                'invited',
+                'changed their phone number',
+                'turned on messages',
+                'waiting for this message',
+                'changed the group description'
+            ];
+            if (systemKeywords.some(keyword => contentNorm.includes(keyword))) {
+                return true;
+            }
+            
+            // 2. Filler website references or bot statistics (e.g. AiSteel.it.com 55, AiSteel.ae 125, etc.)
+            if (/aisteel\s*\.\s*[a-z0-9]+([\.-][a-z0-9]+)*/i.test(contentNorm)) {
+                return true;
+            }
+            
+            // 3. Standalone URLs
+            if (/^https?:\/\/[^\s]+$/i.test(contentNorm)) {
+                return true;
+            }
+            
+            // 4. WhatsApp media omitted placeholders
+            const skipKeywords = [
+                'image omitted', 'photo omitted', 'video omitted', 'sticker omitted', 'gif omitted',
+                'document omitted', 'contact card omitted', 'audio omitted',
+                'تصویر ضمیمه نشد', 'ویدیو ضمیمه نشد', 'استیکر ضمیمه نشد', 'عکس ضمیمه نشد',
+                'تصویر حذف شد', 'ویدیو حذف شد', 'استیکر حذف شد', 'سند ضمیمه نشد'
+            ];
+            if (skipKeywords.some(keyword => contentNorm.includes(keyword))) {
+                return true;
+            }
+            
+            if (/<attached:\s*([^>]+)>/i.test(contentNorm)) {
+                return true;
+            }
+            
+            // 5. Skip very short filler/meaningless expressions (Persian and English fillers)
+            const normalizedContent = contentNorm.replace(/[^\w\s\u0600-\u06FF]/g, ' ');
+            const words = normalizedContent.split(' ').filter(w => w.length > 0);
+            
+            const fillers = new Set([
+                'بله', 'چشم', 'حتما', 'باشه', 'سلام', 'ممنون', 'تشکر', 'خوبید', 'مرسی', 'سپاس', 'اوکی', 'حله', 'آره',
+                'خوبم', 'ممنونم', 'مرسی ممنون', 'انشالله', 'انشأالله', 'انشاالله', 'یاعلی', 'یا علی', 'خب', 'خوب',
+                'شما', 'من', 'ما', 'آنها', 'او', 'ایشان', 'این', 'آن', 'چه', 'چطور', 'چرا', 'کی', 'کجا', 'کیه',
+                'yes', 'ok', 'okey', 'sure', 'thanks', 'thank you', 'hello', 'hi', 'deal', 'yep', 'yup'
+            ]);
+            
+            if (words.length === 1 && fillers.has(words[0])) {
+                return true;
+            }
+            
+            // 6. Skip short/meaningless messages lacking steel industry keywords
+            const steelKeywords = [
+                'تیرآهن', 'تیر آهن', 'ميلگرد', 'میلگرد', 'میل گرد', 'استیل', 'آهن', 'پروفیل', 'لوله', 
+                'نبشی', 'خرید', 'فروش', 'قیمت', 'تن', 'بار', 'ورق', 'قوطی', 'شمش', 'ناودانی', 'هاش', 
+                'سپری', 'سیم', 'مفتول', 'تسمه', 'زانو', 'اتصالات', 'شیرآلات', 'فولاد', 'سفارش', 'تخفیف',
+                'پیش‌فاکتور', 'فاکتور', 'وزن', 'ضخامت', 'ابعاد', 'سایز', 'شاخه', 'کیلو', 'کیلوگرم', 'آهن‌آلات'
+            ];
+            const hasSteelKeyword = steelKeywords.some(kw => contentNorm.includes(kw));
+            
+            const alphanumericOnly = contentNorm.replace(/[^\w\u0600-\u06FF]/g, '').trim();
+            
+            if (!hasSteelKeyword) {
+                if (clean.includes('؟') || clean.includes('?')) {
+                    return true;
+                }
+                if (alphanumericOnly.length < 12) {
+                    return true;
+                }
+                if (words.length <= 2) {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         function highlightKeywords(text) {

@@ -138,42 +138,89 @@ def should_skip_message(content: str) -> bool:
     Filters out messages that are clearly photos, videos, stickers, documents,
     OR are simple uninformative conversational expressions (e.g. بله, چشم, حتما).
     Preserves text messages with actual content and audio/voice files.
+    Also drops short filler/meaningless queries, bot stats, and WhatsApp system logs.
+    Supports robust space-normalization and unicode cleaning.
     """
+    if not content:
+        return True
+        
+    # Standardize spaces and remove directional marks
+    content_clean = content.strip().replace('\u200e', '').replace('\u200f', '').replace('\u202f', ' ').replace('\u200b', '')
+    # Replace any multi-spaces/tabs/newlines with a single space for uniform checks
+    content_norm = re.sub(r'[\s\xa0]+', ' ', content_clean).strip().lower()
+    
     # If it is a voice note/audio file, do NOT skip it!
     if extract_audio_filename(content) is not None:
         return False
         
-    content_clean = content.strip().lower()
+    # 1. Skip WhatsApp system notifications
+    system_keywords = [
+        "added you", "created this group", "joined using an invite link",
+        "changed this group's icon", "changed the subject", "left", "invited",
+        "changed their phone number", "turned on messages", "waiting for this message",
+        "changed the group description"
+    ]
+    if any(keyword in content_norm for keyword in system_keywords):
+        return True
+        
+    # 2. Skip bot stats, domain queries, or lists of domains
+    # e.g., aisteel.it.com 55, aisteel.ae 125, aisteel.ai 719, or aisteel.com
+    if re.search(r"aisteel\s*\.\s*[a-z0-9]+([\.-][a-z0-9]+)*", content_norm, re.IGNORECASE):
+        return True
+        
+    # 3. Skip standalone URLs
+    if re.match(r"^https?://[^\s]+$", content_norm, re.IGNORECASE):
+        return True
     
-    # 1. Skip simple, contentless expressions (Persian and English fillers)
+    # 4. Skip standard photo, video, sticker, document notifications
+    skip_keywords = [
+        "image omitted", "photo omitted", "video omitted", "sticker omitted", "gif omitted",
+        "document omitted", "contact card omitted", "audio omitted",
+        "تصویر ضمیمه نشد", "ویدیو ضمیمه نشد", "استیکر ضمیمه نشد", "عکس ضمیمه نشد",
+        "تصویر حذف شد", "ویدیو حذف شد", "استیکر حذف شد", "سند ضمیمه نشد"
+    ]
+    if any(keyword in content_norm for keyword in skip_keywords):
+        return True
+        
+    # Check for non-audio attached files (e.g. PDF, Images) and skip them
+    if re.search(r"<attached:\s*([^>]+)>", content_norm):
+        return True
+        
+    # 5. Skip very short filler/meaningless expressions (Persian and English fillers)
     # Remove punctuation for clean matching
-    normalized_content = re.sub(r'[^\w\s]', '', content_clean).strip()
+    normalized_content = re.sub(r'[^\w\s\u0600-\u06FF]', ' ', content_norm)
+    words = [w for w in normalized_content.split() if w]
     
     fillers = {
         "بله", "چشم", "حتما", "باشه", "سلام", "ممنون", "تشکر", "خوبید", "مرسی", "سپاس", "اوکی", "حله", "آره",
         "خوبم", "ممنونم", "مرسی ممنون", "انشالله", "انشأالله", "انشاالله", "یاعلی", "یا علی", "خب", "خوب",
+        "شما", "من", "ما", "آنها", "او", "ایشان", "این", "آن", "چه", "چطور", "چرا", "کی", "کجا", "کیه",
         "yes", "ok", "okey", "sure", "thanks", "thank you", "hello", "hi", "deal", "yep", "yup"
     }
     
-    if normalized_content in fillers or not normalized_content:
+    if len(words) == 1 and words[0] in fillers:
         return True
         
-    # 2. Skip standard photo, video, sticker, document notifications
-    skip_keywords = [
-        "image omitted", "photo omitted", "video omitted", "sticker omitted", "gif omitted",
-        "document omitted", "contact card omitted",
-        "تصویر ضمیمه نشد", "ویدیو ضمیمه نشد", "استیکر ضمیمه نشد", "عکس ضمیمه نشد",
-        "تصویر حذف شد", "ویدیو حذف شد", "استیکر حذف شد", "سند ضمیمه نشد"
+    # 6. Skip short/meaningless messages lacking steel industry keywords
+    steel_keywords = [
+        "تیرآهن", "تیر آهن", "ميلگرد", "میلگرد", "میل گرد", "استیل", "آهن", "پروفیل", "لوله", 
+        "نبشی", "خرید", "فروش", "قیمت", "تن", "بار", "ورق", "قوطی", "شمش", "ناودانی", "هاش", 
+        "سپری", "سیم", "مفتول", "تسمه", "زانو", "اتصالات", "شیرآلات", "فولاد", "سفارش", "تخفیف",
+        "پیش‌فاکتور", "فاکتور", "وزن", "ضخامت", "ابعاد", "سایز", "شاخه", "کیلو", "کیلوگرم", "آهن‌آلات"
     ]
+    has_steel_keyword = any(kw in content_norm for kw in steel_keywords)
     
-    for keyword in skip_keywords:
-        if keyword in content_clean:
+    # Count characters (excluding spaces and punctuation)
+    alphanumeric_only = re.sub(r'[^\w\u0600-\u06FF]', '', content_norm).strip()
+    
+    if not has_steel_keyword:
+        # Match questions consisting of name/short text only (e.g. عرفان ؟؟)
+        if '؟' in content_clean or '?' in content_clean:
             return True
-            
-    # Check for non-audio attached files (e.g. PDF, Images) and skip them
-    attached_match = re.search(r"<attached:\s*([^>]+)>", content_clean)
-    if attached_match:
-        return True
+        if len(alphanumeric_only) < 12:
+            return True
+        if len(words) <= 2:
+            return True
         
     return False
 

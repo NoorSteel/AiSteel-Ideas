@@ -8,6 +8,7 @@ temp_audio/
 temp_first_chars.txt
 temp_parsed_out.txt
 sheet_rows.txt
+backup_sheet_*.json
 
 # Python cache & IDE files
 __pycache__/
