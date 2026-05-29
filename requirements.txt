@@ -2,3 +2,5 @@ gspread>=5.10.0
 google-auth>=2.20.0
 colorama>=0.4.6
 openai-whisper>=20231117
+openai>=1.30.0
+python-dotenv>=1.0.0
