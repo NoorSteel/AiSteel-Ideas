@@ -46,7 +46,7 @@ Install the required libraries (including `openai-whisper` and PyTorch dependenc
 ```powershell
 python -m pip install -r requirements.txt
 ```
-> **Note**: The first time you run a voice note transcription, Whisper will automatically download the `"base"` language model (~140MB) to your local cache folder.
+> **Note**: The first time you run a voice note transcription, Whisper will automatically download the `"medium"` language model (~1.5GB) to your local cache folder for superior Farsi accuracy. If you configure it to `"large"` in `main.py`, it will download a ~3.0GB model.
 
 ---
 

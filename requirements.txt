@@ -2,3 +2,4 @@ gspread>=5.10.0
 google-auth>=2.20.0
 colorama>=0.4.6
 openai-whisper>=20231117
+faster-whisper>=1.0.0

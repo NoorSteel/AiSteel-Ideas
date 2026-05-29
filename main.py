@@ -1,15 +1,26 @@
 import os
+import sys
+
+# Redirect HuggingFace and PyTorch cache directories to the D drive (local project folder)
+# to completely prevent your C drive from filling up with massive model files!
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCAL_CACHE_DIR = os.path.join(BASE_DIR, ".cache")
+os.makedirs(LOCAL_CACHE_DIR, exist_ok=True)
+
+os.environ["HF_HOME"] = os.path.join(LOCAL_CACHE_DIR, "huggingface")
+os.environ["TORCH_HOME"] = os.path.join(LOCAL_CACHE_DIR, "torch")
+
 import re
 import uuid
 import shutil
 import hashlib
 import logging
 import zipfile
-import sys
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
+
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -24,7 +35,33 @@ ffmpeg_bin = r"C:\Users\HP\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_M
 if os.path.exists(ffmpeg_bin) and ffmpeg_bin not in os.environ["PATH"]:
     os.environ["PATH"] = ffmpeg_bin + os.path.pathsep + os.environ["PATH"]
 
-# Gracefully import whisper to avoid import errors if dependencies are not yet installed
+# Add NVIDIA CUDA DLLs from python site-packages to PATH to ensure faster-whisper/ctranslate2 find cublas/cudnn DLLs on Windows
+if sys.platform.startswith("win"):
+    import site
+    try:
+        # Check both user site-packages and global site-packages
+        sp_dirs = site.getsitepackages()
+        if hasattr(site, 'getusersitepackages'):
+            sp_dirs.append(site.getusersitepackages())
+        for sp_dir in sp_dirs:
+            nvidia_path = os.path.join(sp_dir, "nvidia")
+            if os.path.exists(nvidia_path):
+                for sub in os.listdir(nvidia_path):
+                    bin_path = os.path.join(nvidia_path, sub, "bin")
+                    if os.path.exists(bin_path) and bin_path not in os.environ["PATH"]:
+                        os.environ["PATH"] = bin_path + os.path.pathsep + os.environ["PATH"]
+    except Exception as path_err:
+        pass
+
+
+# Gracefully import faster-whisper and openai-whisper to avoid import errors if dependencies are not yet installed
+try:
+    from faster_whisper import WhisperModel
+    has_faster_whisper = True
+except ImportError:
+    WhisperModel = None
+    has_faster_whisper = False
+
 try:
     import whisper
 except ImportError:
@@ -42,8 +79,16 @@ LOGS_DIR = os.path.join(BASE_DIR, "logs")
 TEMP_AUDIO_DIR = os.path.join(BASE_DIR, "temp_audio")
 
 # Whisper Local Model Selection (Options: "tiny", "base", "small", "medium", "large")
-# We use the highly accurate "small" model which is excellent for Farsi speech-to-text.
-WHISPER_MODEL_NAME = "small"
+# We use the highly accurate "medium" model which is excellent for Farsi speech-to-text.
+# If your machine is powerful (ideally with a GPU) and you want maximum accuracy, you can set this to "large".
+WHISPER_MODEL_NAME = "medium"
+
+# Testing / Quality Check Limit:
+# Set to an integer (e.g., 3) to stop the process after transcribing this many voice messages.
+# This lets you check the transcription quality in Google Sheets first.
+# Set to None to run the entire file to the end without stopping.
+DEBUG_MAX_TRANSCRIPTIONS = None 
+
 
 # Google Sheets Configuration
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/edit"
@@ -192,32 +237,64 @@ def extract_audio_from_zip(zip_path: str, filename: str, output_dir: str) -> str
 
 def transcribe_audio(audio_path: str) -> dict:
     """
-    Transcribes an audio file locally using OpenAI Whisper.
-    Uses the highly accurate "small" model, primed for Persian steel trade terms.
+    Transcribes an audio file locally using OpenAI Whisper (or faster-whisper if available).
+    Uses the highly accurate "medium" model, primed for Persian steel trade terms.
     Extracts text transcript, duration, language, and status.
     """
-    if whisper is None:
-        raise ImportError("OpenAI Whisper library is not installed or failed to import. Run 'python -m pip install -r requirements.txt'")
+    if not has_faster_whisper and whisper is None:
+        raise ImportError("Neither faster-whisper nor openai-whisper library is installed. Run 'python -m pip install -r requirements.txt'")
         
     logger.info(f"Loading Whisper '{WHISPER_MODEL_NAME}' model for transcribing: {os.path.basename(audio_path)}")
     try:
-        # Load local PyTorch Whisper model (full 32-bit floating point precision)
-        model = whisper.load_model(WHISPER_MODEL_NAME)
-        
         # Steel industry terminology prompting in Persian and English
         initial_prompt = "AiSteel, آهن، فولاد، میلگرد، تیرآهن، استارتاپ، بیزینس، متالورژی، ریخته‌گری، نبشی، پروفیل، لوله، خرید فولاد"
         
-        logger.info("Running Speech-to-Text transcription...")
-        result = model.transcribe(audio_path, language="fa", initial_prompt=initial_prompt)
-        
-        transcript = result.get("text", "").strip()
-        language = result.get("language", "fa")
-        
-        # Calculate duration based on the end of the final segment
-        duration = 0.0
-        segments = result.get("segments", [])
-        if segments:
-            duration = segments[-1].get("end", 0.0)
+        if has_faster_whisper:
+            logger.info("Using faster-whisper for transcription...")
+            # Auto-detect CUDA GPU for maximum performance, fallback to CPU
+            device = "cpu"
+            compute_type = "int8"
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device = "cuda"
+                    compute_type = "float16"
+                    logger.info("GPU detected! Running faster-whisper on CUDA with float16 precision.")
+                else:
+                    logger.info("GPU not detected. Running faster-whisper on CPU with int8 quantization (fast).")
+            except Exception as torch_err:
+                logger.debug(f"Could not check GPU availability via PyTorch: {torch_err}")
+                logger.info("Running faster-whisper on CPU with int8 quantization.")
+                
+            model = WhisperModel(WHISPER_MODEL_NAME, device=device, compute_type=compute_type)
+            
+            logger.info("Running Speech-to-Text transcription...")
+            segments, info = model.transcribe(audio_path, language="fa", initial_prompt=initial_prompt)
+            
+            segments = list(segments)
+            transcript = "".join([segment.text for segment in segments]).strip()
+            language = info.language
+            
+            # Calculate duration based on the end of the final segment
+            duration = 0.0
+            if segments:
+                duration = segments[-1].end
+        else:
+            logger.info("Using standard openai-whisper for transcription...")
+            # Load local PyTorch Whisper model (full 32-bit floating point precision)
+            model = whisper.load_model(WHISPER_MODEL_NAME)
+            
+            logger.info("Running Speech-to-Text transcription...")
+            result = model.transcribe(audio_path, language="fa", initial_prompt=initial_prompt)
+            
+            transcript = result.get("text", "").strip()
+            language = result.get("language", "fa")
+            
+            # Calculate duration based on the end of the final segment
+            duration = 0.0
+            segments = result.get("segments", [])
+            if segments:
+                duration = segments[-1].get("end", 0.0)
             
         logger.info(f"Transcription successful! Duration: {duration:.2f}s, Language: {language}")
         return {
@@ -451,6 +528,8 @@ def process_files():
             
             rows_to_insert = []
             import_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            transcribed_count = 0
+            debug_limit_reached = False
             
             print(Fore.YELLOW + f"\nStarting Import Queue for file: {file_name}")
             print(Fore.WHITE + "--------------------------------------------------")
@@ -477,6 +556,12 @@ def process_files():
                 transcription_status = "N/A"
                 
                 if is_voice:
+                    if DEBUG_MAX_TRANSCRIPTIONS is not None and transcribed_count >= DEBUG_MAX_TRANSCRIPTIONS:
+                        sys.stdout.write(f"\n{Fore.YELLOW}[Debug Limit] Reached limit of {DEBUG_MAX_TRANSCRIPTIONS} voice transcriptions. Saving progress and stopping early so you can verify quality in Google Sheets.\n")
+                        sys.stdout.flush()
+                        debug_limit_reached = True
+                        break
+                        
                     sys.stdout.write(f"\r{Fore.MAGENTA}[Voice STT] {audio_filename} from {msg['sender'][:12]}...                  \n")
                     sys.stdout.flush()
                     
@@ -496,9 +581,9 @@ def process_files():
                             
                     # Perform Local Transcription
                     if extracted_audio_path and os.path.exists(extracted_audio_path):
-                        if whisper is None:
-                            transcription_status = "Failed: openai-whisper package not installed"
-                            sys.stdout.write(f"{Fore.YELLOW}  >> Skipping local transcription: whisper library not installed.\n")
+                        if not has_faster_whisper and whisper is None:
+                            transcription_status = "Failed: Whisper packages not installed"
+                            sys.stdout.write(f"{Fore.YELLOW}  >> Skipping local transcription: Whisper libraries not installed.\n")
                             sys.stdout.flush()
                         else:
                             try:
@@ -509,6 +594,7 @@ def process_files():
                                 transcription_status = stt_result["status"]
                                 if stt_result["status"] == "Success":
                                     sys.stdout.write(f"{Fore.GREEN}  >> Transcribed: \"{transcript_text[:40]}...\" ({duration_sec}s)\n")
+                                    transcribed_count += 1
                                 else:
                                     sys.stdout.write(f"{Fore.RED}  >> Transcription Failed: {stt_result['status']}\n")
                                 sys.stdout.flush()
@@ -597,8 +683,11 @@ def process_files():
                 logger.info(Fore.YELLOW + "No new records to import. All items in this file were duplicates/filtered.")
                 
             # Move file to processed folder
-            shutil.move(file_path, os.path.join(PROCESSED_DIR, file_name))
-            logger.info(Fore.GREEN + f"Moved successfully: {file_name} -> /processed")
+            if not debug_limit_reached:
+                shutil.move(file_path, os.path.join(PROCESSED_DIR, file_name))
+                logger.info(Fore.GREEN + f"Moved successfully: {file_name} -> /processed")
+            else:
+                logger.info(Fore.YELLOW + f"Debug limit was reached. File '{file_name}' remains in the '/input' folder so you can run it again later.")
             
         except Exception as e:
             errors_in_file = 1
