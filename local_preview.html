@@ -884,10 +884,10 @@
                             <p>داشبورد یکپارچه نظارت و آنالیز داده‌های AiSteel</p>
                         </div>
                         
-                        \${state.loginError ? `
+                        ${state.loginError ? `
                             <div class="error-message">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                <span>\${state.loginError}</span>
+                                <span>${state.loginError}</span>
                             </div>
                         ` : ''}
                         
@@ -949,11 +949,11 @@
                             <button class="btn-icon" id="logoutBtn" title="خروج از حساب">
                                 <i class="fas fa-sign-out-alt"></i>
                             </button>
-                            <span class="sender-name">کاربر: \${state.user}</span>
+                            <span class="sender-name">کاربر: ${state.user}</span>
                         </div>
                         <div class="navbar-brand">
                             <span class="text-gradient-steel" style="font-family: var(--font-outfit); font-weight: 800; font-size: 20px;">AiSteel Dashboard</span>
-                            <img src="\${logoUrl}" alt="AiSteel Logo" class="navbar-logo">
+                            <img src="${logoUrl}" alt="AiSteel Logo" class="navbar-logo">
                         </div>
                     </nav>
 
@@ -963,60 +963,60 @@
                                 <div class="stat-icon total"><i class="fas fa-envelope"></i></div>
                                 <div class="stat-info">
                                     <h3>کل پیام‌های چت</h3>
-                                    <div class="stat-number">\${totalRecords}</div>
+                                    <div class="stat-number">${totalRecords}</div>
                                 </div>
                             </div>
                             <div class="stat-card glass-panel">
                                 <div class="stat-icon audio"><i class="fas fa-microphone"></i></div>
                                 <div class="stat-info">
                                     <h3>فایل‌های صوتی</h3>
-                                    <div class="stat-number">\${voiceRecords.length}</div>
+                                    <div class="stat-number">${voiceRecords.length}</div>
                                 </div>
                             </div>
                             <div class="stat-card glass-panel">
                                 <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
                                 <div class="stat-info">
                                     <h3>متنی‌سازی موفق</h3>
-                                    <div class="stat-number">\${voiceRecords.length > 0 ? Math.round((successTranscripts / voiceRecords.length) * 100) : 0}%</div>
+                                    <div class="stat-number">${voiceRecords.length > 0 ? Math.round((successTranscripts / voiceRecords.length) * 100) : 0}%</div>
                                 </div>
                             </div>
                             <div class="stat-card glass-panel">
                                 <div class="stat-icon duration"><i class="fas fa-clock"></i></div>
                                 <div class="stat-info">
                                     <h3>کل زمان مکالمات</h3>
-                                    <div class="stat-number">\${Math.round(totalDuration)} ثانیه</div>
+                                    <div class="stat-number">${Math.round(totalDuration)} ثانیه</div>
                                 </div>
                             </div>
                         </section>
 
                         <section class="control-bar glass-panel">
                             <div class="filter-actions">
-                                <button class="filter-btn \${state.filterSource === 'all' ? 'active' : ''}" id="filterAll">
+                                <button class="filter-btn ${state.filterSource === 'all' ? 'active' : ''}" id="filterAll">
                                     <span>همه پیام‌ها</span>
                                 </button>
-                                <button class="filter-btn \${state.filterSource === 'text' ? 'active' : ''}" id="filterText">
+                                <button class="filter-btn ${state.filterSource === 'text' ? 'active' : ''}" id="filterText">
                                     <i class="fas fa-align-right"></i>
                                     <span>متن خام</span>
                                 </button>
-                                <button class="filter-btn \${state.filterSource === 'voice' ? 'active' : ''}" id="filterVoice">
+                                <button class="filter-btn ${state.filterSource === 'voice' ? 'active' : ''}" id="filterVoice">
                                     <i class="fas fa-microphone"></i>
                                     <span>صداها</span>
                                 </button>
                             </div>
                             <div class="search-box">
-                                <input class="search-input" type="text" id="searchInput" placeholder="جستجو در پیام‌ها، ترنسکریپت‌ها یا فرستنده‌ها..." value="\${state.searchQuery}">
+                                <input class="search-input" type="text" id="searchInput" placeholder="جستجو در پیام‌ها، ترنسکریپت‌ها یا فرستنده‌ها..." value="${state.searchQuery}">
                                 <i class="fas fa-search search-icon"></i>
                             </div>
                         </section>
 
-                        \${state.loading ? `
+                        ${state.loading ? `
                             <div class="loading-box glass-panel">
                                 <div class="spinner"></div>
                                 <p>درحال واکشی و آنالیز اطلاعات گوگل شیت...</p>
                             </div>
                         ` : `
                             <section class="grid-container">
-                                \${filteredRecords.length === 0 ? `
+                                ${filteredRecords.length === 0 ? `
                                     <div class="loading-box glass-panel">
                                         <i class="fas fa-folder-open" style="font-size: 40px; color: #8b949e; margin-bottom: 12px;"></i>
                                         <p>هیچ پیامی با فیلترها و جستجوی شما مطابقت ندارد.</p>
@@ -1042,44 +1042,44 @@
                 <article class="record-card glass-panel">
                     <div class="card-header">
                         <div class="meta-info">
-                            <span class="source-badge \${isVoice ? 'voice' : 'text'}">\${isVoice ? 'پیام صوتی' : 'پیام متنی'}</span>
-                            <span><i class="far fa-calendar-alt"></i> \${r.Date}</span>
-                            <span><i class="far fa-clock"></i> \${r.Time}</span>
+                            <span class="source-badge ${isVoice ? 'voice' : 'text'}">${isVoice ? 'پیام صوتی' : 'پیام متنی'}</span>
+                            <span><i class="far fa-calendar-alt"></i> ${r.Date}</span>
+                            <span><i class="far fa-clock"></i> ${r.Time}</span>
                         </div>
                         <div class="sender-badge">
-                            <span class="sender-name">\${sender}</span>
-                            <span class="sender-avatar">\${initials}</span>
+                            <span class="sender-name">${sender}</span>
+                            <span class="sender-avatar">${initials}</span>
                         </div>
                     </div>
                     
                     <div class="card-body">
-                        \${cleanContent}
+                        ${cleanContent}
                     </div>
                     
-                    \${isVoice && r['Audio File'] ? `
+                    ${isVoice && r['Audio File'] ? `
                         <div class="audio-player-box">
-                            <span class="audio-duration">\${r.Duration} ثانیه</span>
+                            <span class="audio-duration">${r.Duration} ثانیه</span>
                             <div class="audio-track-info">
-                                <span class="audio-file-name">\${r['Audio File']}</span>
+                                <span class="audio-file-name">${r['Audio File']}</span>
                                 <div class="audio-waveform-fallback">
-                                    <div class="audio-waveform-progress progress-\${r.ID}" style="width: \${state.activeAudioId === r.ID ? state.audioProgress : 0}%"></div>
+                                    <div class="audio-waveform-progress progress-${r.ID}" style="width: ${state.activeAudioId === r.ID ? state.audioProgress : 0}%"></div>
                                 </div>
                             </div>
-                            <button class="play-btn" onclick="window.toggleAudio('\${r.ID}', '\${r['Audio File']}')">
-                                <i class="fas \${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                            <button class="play-btn" onclick="window.toggleAudio('${r.ID}', '${r['Audio File']}')">
+                                <i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
                             </button>
                         </div>
                         
-                        \${r['Transcription Status'] === 'Success' && rawTranscript ? `
+                        ${r['Transcription Status'] === 'Success' && rawTranscript ? `
                             <div class="card-body" style="margin-top: 12px; font-size: 13px; color: #8b949e; border-top: 1px dashed var(--border-metal); padding-top: 10px;">
                                 <strong><i class="fas fa-quote-right" style="font-size: 10px; margin-left: 4px;"></i> متن ترنسکریپت خام:</strong><br>
-                                \${rawTranscript}
+                                ${rawTranscript}
                             </div>
                         ` : ''}
-                    \${r['Transcription Status'] !== 'Success' && r['Transcription Status'] !== 'N/A' ? `
+                    ${r['Transcription Status'] !== 'Success' && r['Transcription Status'] !== 'N/A' ? `
                         <div class="error-message" style="margin-top: 12px; margin-bottom: 0; padding: 6px 12px; font-size: 12px;">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <span>متنی‌سازی ناموفق: \${r['Transcription Status']}</span>
+                            <span>متنی‌سازی ناموفق: ${r['Transcription Status']}</span>
                         </div>
                     ` : ''}
                     ` : ''}

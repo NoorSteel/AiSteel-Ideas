@@ -14,11 +14,19 @@ class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def do_GET(self):
+        # Support serving the standalone preview from root folder if requested
+        if self.path in ("/", "/local_preview.html"):
+            root_preview = os.path.join(os.path.dirname(DIRECTORY), "local_preview.html")
+            if os.path.exists(root_preview):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                with open(root_preview, "rb") as f:
+                    self.wfile.write(f.read())
+                return
         # Support Vite path mapping in fallback mode
         if self.path.startswith("/src/") or self.path.startswith("/assets/"):
             pass
-        elif self.path == "/":
-            self.path = "/local_preview.html"
         super().do_GET()
 
 def open_browser():
