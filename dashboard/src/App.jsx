@@ -77,6 +77,73 @@ function highlightKeywords(text) {
   return highlighted;
 }
 
+// ─────────────────────────────────────────────────────────────
+// General-purpose meaningless message filter
+// Rules are structural/pattern-based — NOT content-specific
+// ─────────────────────────────────────────────────────────────
+function isMeaninglessMessage(content) {
+  if (!content) return true;
+
+  // Normalize: strip directional marks, collapse whitespace
+  const norm = content
+    .trim()
+    .replace(/[\u200e\u200f\u200b\u200c\u200d]/g, '')
+    .replace(/[\s\u00a0\u202f\t\r\n]+/g, ' ')
+    .trim();
+
+  if (!norm) return true;
+
+  const lower = norm.toLowerCase();
+
+  // ── Rule 1: Too short to carry real meaning ──────────────────
+  // Strip all spaces, punctuation, numbers → if real chars < 4, skip
+  const meaningful = norm.replace(/[\s\d\p{P}؟،؛!?.,;:\-_@#$%^&*()+=<>]/gu, '');
+  if (meaningful.length < 4) return true;
+
+  // ── Rule 2: Entire message is a single URL ───────────────────
+  if (/^https?:\/\/\S+$/.test(lower)) return true;
+
+  // ── Rule 3: Pattern — word/domain followed only by a number ──
+  // Catches stats like: "SomeThing.com 55" or "Word 123"
+  if (/^[\w][\w.\-]{1,40}\s+\d+$/.test(lower)) return true;
+
+  // ── Rule 4: Short text ending with only question marks ───────
+  // Catches "عرفان ؟؟" or "محمد خوشنودی ??" — name + no real question
+  if (/^[^\d\n]{1,30}[؟?]{1,}$/.test(norm)) {
+    // Allow through if it contains a sentence-level verb or conjunction
+    const hasContext = /[،.!؟]{0,}\s*\w{4,}/.test(norm.slice(0, -2));
+    if (!hasContext) return true;
+  }
+
+  // ── Rule 5: WhatsApp system action phrases ───────────────────
+  // These are fixed WhatsApp-generated strings, not user content
+  const systemPhrases = [
+    'added you',
+    'created this group',
+    'joined using',
+    "changed this group's",
+    'changed the subject',
+    'invited',
+    'changed their phone number',
+    'turned on messages',
+    'waiting for this message',
+    'changed the group description',
+    'end-to-end encrypted',
+    'this message was deleted',
+    'you deleted this message',
+  ];
+  if (systemPhrases.some(p => lower.includes(p))) return true;
+
+  // ── Rule 6: Media / file attachment placeholders ─────────────
+  // Pattern: "[media type] omitted" or "<attached: ...>"
+  if (/\b\w+\s+omitted\b/i.test(lower)) return true;
+  if (/<attached:\s*[^>]*>/i.test(lower)) return true;
+  // Persian equivalents: anything + "ضمیمه نشد" or "حذف شد"
+  if (/ضمیمه نشد|حذف شد/.test(norm)) return true;
+
+  return false;
+}
+
 export default function App() {
   // Theme Switching State
   const [theme, setTheme] = useState(localStorage.getItem('aisteel_theme') || 'dark');
@@ -140,7 +207,7 @@ export default function App() {
           mapped[key] = item[key] !== null && item[key] !== undefined ? String(item[key]) : '';
         });
         return mapped;
-      }).filter(item => item.ID || item.Date);
+      }).filter(item => (item.ID || item.Date) && !isMeaninglessMessage(item['Raw Content']));
       
       // Reverse chronological order (latest messages at top)
       parsedRecords.reverse();

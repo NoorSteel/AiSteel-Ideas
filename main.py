@@ -10,6 +10,21 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
+from normalization_layer import normalize_text
+from sheet_guard import safe_worksheet, SheetWriteProtectionError
+import time
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    from openai import OpenAI
+    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+except ImportError:
+    openai_client = None
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -135,46 +150,72 @@ def extract_audio_filename(content: str) -> str:
 
 def should_skip_message(content: str) -> bool:
     """
-    Filters out messages that are clearly photos, videos, stickers, documents,
-    OR are simple uninformative conversational expressions (e.g. بله, چشم, حتما).
-    Preserves text messages with actual content and audio/voice files.
+    Refined, extremely safe filter. Only filters out:
+    1. WhatsApp system notifications
+    2. Bot domain counts (e.g. AiSteel.it.com 55)
+    3. Standalone URLs
+    4. WhatsApp media omitted logs
+    5. Single name questions (e.g. عرفان ؟؟)
+    Keeps all other valid conversational short messages (e.g. 38 درهم, بخرم؟, این خوبه).
     """
+    if not content:
+        return True
+        
+    # Standardize spaces and remove directional marks
+    content_clean = content.strip().replace('\u200e', '').replace('\u200f', '').replace('\u202f', ' ').replace('\u200b', '')
+    content_norm = re.sub(r'[\s\xa0]+', ' ', content_clean).strip().lower()
+    
     # If it is a voice note/audio file, do NOT skip it!
     if extract_audio_filename(content) is not None:
         return False
         
-    content_clean = content.strip().lower()
-    
-    # 1. Skip simple, contentless expressions (Persian and English fillers)
-    # Remove punctuation for clean matching
-    normalized_content = re.sub(r'[^\w\s]', '', content_clean).strip()
-    
-    fillers = {
-        "بله", "چشم", "حتما", "باشه", "سلام", "ممنون", "تشکر", "خوبید", "مرسی", "سپاس", "اوکی", "حله", "آره",
-        "خوبم", "ممنونم", "مرسی ممنون", "انشالله", "انشأالله", "انشاالله", "یاعلی", "یا علی", "خب", "خوب",
-        "yes", "ok", "okey", "sure", "thanks", "thank you", "hello", "hi", "deal", "yep", "yup"
-    }
-    
-    if normalized_content in fillers or not normalized_content:
+    # 1. Skip WhatsApp system notifications
+    system_keywords = [
+        "added you", "created this group", "joined using an invite link",
+        "changed this group's icon", "changed the subject", "left", "invited",
+        "changed their phone number", "turned on messages", "waiting for this message",
+        "changed the group description", "messages and calls are end-to-end encrypted"
+    ]
+    if any(keyword in content_norm for keyword in system_keywords):
         return True
         
-    # 2. Skip standard photo, video, sticker, document notifications
+    # 2. Skip bot count statistics (e.g. AiSteel.it.com 55)
+    # Only skips if it matches domain followed by counts/numbers
+    if re.search(r"aisteel\s*\.\s*[a-z0-9]+([\.-][a-z0-9]+)*\s+\d+", content_norm, re.IGNORECASE):
+        return True
+        
+    # 3. Skip standalone URLs
+    if re.match(r"^https?://[^\s]+$", content_norm, re.IGNORECASE):
+        return True
+        
+    # 4. Skip standard WhatsApp media omitted placeholders
     skip_keywords = [
         "image omitted", "photo omitted", "video omitted", "sticker omitted", "gif omitted",
-        "document omitted", "contact card omitted",
+        "document omitted", "contact card omitted", "audio omitted",
         "تصویر ضمیمه نشد", "ویدیو ضمیمه نشد", "استیکر ضمیمه نشد", "عکس ضمیمه نشد",
         "تصویر حذف شد", "ویدیو حذف شد", "استیکر حذف شد", "سند ضمیمه نشد"
     ]
-    
-    for keyword in skip_keywords:
-        if keyword in content_clean:
-            return True
-            
-    # Check for non-audio attached files (e.g. PDF, Images) and skip them
-    attached_match = re.search(r"<attached:\s*([^>]+)>", content_clean)
-    if attached_match:
+    if any(keyword in content_norm for keyword in skip_keywords):
         return True
         
+    # Check for non-audio attached files (e.g. PDF, Images) and skip them
+    if re.search(r"<attached:\s*([^>]+)>", content_norm):
+        return True
+        
+    # 5. Skip single name/short filler questions (e.g. "عرفان ؟؟" or "محمد خوشنودي ؟؟")
+    # If it ends with a question mark and is short, check if it has trade context
+    if '؟' in content_clean or '?' in content_clean:
+        stripped = re.sub(r'[؟\?\s]', '', content_clean).strip()
+        steel_keywords = [
+            "تیرآهن", "تیر آهن", "ميلگرد", "میلگرد", "میل گرد", "استیل", "آهن", "پروفیل", "لوله", 
+            "نبشی", "خرید", "فروش", "قیمت", "تن", "بار", "ورق", "قوطی", "شمش", "ناودانی", "هاش", 
+            "سپری", "سیم", "مفتول", "تسمه", "زانو", "اتصالات", "شیرآلات", "فولاد", "سفارش", "تخفیف",
+            "درهم", "درم", "تومان", "ریال", "موجود", "موجوده", "بخر", "بخرم"
+        ]
+        has_steel = any(kw in content_norm for kw in steel_keywords)
+        if len(stripped) < 12 and not has_steel:
+            return True
+            
     return False
 
 def extract_audio_from_zip(zip_path: str, filename: str, output_dir: str) -> str:
@@ -338,7 +379,10 @@ def get_column_mapping(sheet):
         "Duration": ["Duration", "duration", "مدت زمان", "ثانیه"],
         "Transcript": ["Transcript", "transcript", "متن صدا", "transcription"],
         "Language": ["Language", "language", "زبان"],
-        "Transcription Status": ["Transcription Status", "TranscriptionStatus", "وضعیت متنی‌سازی", "transcription_status"]
+        "Transcription Status": ["Transcription Status", "TranscriptionStatus", "وضعیت متنی‌سازی", "transcription_status"],
+        "Normalized Content": ["Normalized Content", "NormalizedContent", "normalized_content", "متن نرمال‌شده", "متن نرمال شده"],
+        "Transcription": ["Transcription", "transcription", "بهینه‌سازی شده"],
+        "Status": ["Status", "status", "وضعیت"]
     }
     
     # Optional columns from user's template to enrich if present
@@ -386,6 +430,50 @@ def get_column_mapping(sheet):
         
     return mapping, len(headers)
 
+# The optimized system prompt containing specialized team names and metal terms
+SYSTEM_PROMPT = """تو یک هوش مصنوعی ویراستار و متخصص در حوزه صنعت آهن و فولاد هستی.
+متن زیر خروجی خام تبدیل گفتار به نوشتار (STT) از یک وویس واتس‌اپ یا یک پیام متنی است. 
+
+وظیفه تو این است که بدون تغییر در معنا، مفهوم و اطلاعات اصلی پیام:
+1. غلط‌های املایی ناشی از تلفظ یا اشتباهات صوتی را اصلاح کنی (مثلاً "میل گرد" به "میلگرد"، "تیر آهن" به "تیرآهن" یا اصطلاحات متالورژی).
+2. اسامی خاص اعضای تیم و همکاران را شناسایی کرده و املای صحیح آن‌ها را دقیقاً مطابق با لیست زیر ثبت کنی (از ثبت املای عامیانه، صوتیِ اشتباه یا فینگلیش خودداری شود):
+   - محمدرضا ذاکری
+   - محمد خشنودی
+   - عرفان
+   - آیدا
+   - نگین
+   - محمدعلی
+3. علائم نگارشی (نقطه، ویرگول، علامت سوال و ...) را به درستی قرار دهی تا متن کاملاً خوانا شود.
+4. کلمات پرکننده عامیانه، جملات زائد و تکرارهای اضافی صحبت کردن (مانند "اممم"، "مثلا"، "در واقع"، مکث‌های بیهوده) را حذف کنی.
+5. هرگونه ساختار لیست‌بندی (مانند بولِت‌پوینت، خط تیره، شماره‌گذاری و استایل‌های لیستی) را حذف کرده و کل متن را به صورت یک پاراگراف روان، پیوسته، منسجم و یک‌دست بازنویسی کنی. کل پیام باید به شکل پاراگراف متنی ارائه شود.
+6. اصطلاحات انگلیسی یا استارتاپی که فینگلیش یا با املای نادرست نوشته شده‌اند را اصلاح کنی.
+
+پاسخ تو باید فقط و فقط شامل متن اصلاح‌شده و نهایی باشد که به صورت یک پاراگراف یک‌دست است، و هیچ توضیح اضافی یا عنوان دیگری ننویسی.
+
+متن ورودی:
+" {text} "
+
+متن اصلاح‌شده و نهایی برای ثبت در گوگل شیت:"""
+
+def call_ai_editor(text: str) -> str:
+    """Calls OpenAI GPT with the optimized Node1 system prompt to clean the text."""
+    if not text or len(text.strip()) < 2 or openai_client is None:
+        return ""
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": SYSTEM_PROMPT.format(text=text)},
+            ],
+            temperature=0.1,
+            max_tokens=500,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"  OpenAI API Error in call_ai_editor: {e}")
+        return ""
+
 def process_files():
     """Main execution loop to find, parse, and upload WhatsApp chats."""
     print(Fore.CYAN + Style.BRIGHT + "\n==============================================")
@@ -416,8 +504,8 @@ def process_files():
         creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_url(SPREADSHEET_URL)
-        sheet = spreadsheet.worksheet(SHEET_NAME)
-        logger.info(Fore.GREEN + f"Connected successfully to spreadsheet: '{spreadsheet.title}' -> worksheet: '{sheet.title}'")
+        sheet = safe_worksheet(spreadsheet, SHEET_NAME)
+        logger.info(Fore.GREEN + f"Connected successfully to spreadsheet: '{spreadsheet.title}' -> worksheet: '{sheet.title}' [PROTECTED]")
     except Exception as e:
         logger.error(Fore.RED + f"Failed to connect to Google Sheets: {e}")
         return
@@ -556,6 +644,13 @@ def process_files():
                 # Generate unique ID
                 msg_id = uuid.uuid4().hex
                 
+                # Perform AI Node1 text optimization on-the-fly
+                optimized_text = ""
+                if content_for_hash and len(content_for_hash.strip()) >= 2:
+                    optimized_text = call_ai_editor(content_for_hash)
+                    # Polite rate-limiting between API calls
+                    time.sleep(0.5)
+
                 # Build Row according to dynamic column mapping
                 row_data = [""] * max_cols
                 row_data[mapping["ID"] - 1] = msg_id
@@ -563,9 +658,14 @@ def process_files():
                 row_data[mapping["Time"] - 1] = msg["time"]
                 row_data[mapping["Created By"] - 1] = msg["sender"]
                 row_data[mapping["Raw Content"] - 1] = content_for_hash
+                row_data[mapping["Normalized Content"] - 1] = normalize_text(content_for_hash)
                 row_data[mapping["Message Hash"] - 1] = msg_hash
                 row_data[mapping["Import Timestamp"] - 1] = import_time
                 row_data[mapping["Source"] - 1] = source_val
+                
+                # AI Optimized columns
+                row_data[mapping["Transcription"] - 1] = optimized_text
+                row_data[mapping["Status"] - 1] = "node1" if optimized_text else ""
                 
                 # Voice metadata fields
                 row_data[mapping["Audio File"] - 1] = audio_filename if audio_filename else ""
