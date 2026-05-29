@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AiSteel - داشبورد هوشمند مدیریت داده‌ها</title>
+    <!-- Google Fonts: Outfit & Inter & Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Embed styled CSS directly for zero-bundler immediate browser preview */
+        /* HSL Premium Steel Color System */
+        :root {
+            --bg-metal: #0d1117;
+            --bg-metal-light: #161b22;
+            --border-metal: rgba(255, 255, 255, 0.08);
+            --border-metal-glow: rgba(0, 150, 255, 0.25);
+            
+            --primary: #0078ff;
+            --primary-glow: rgba(0, 120, 255, 0.35);
+            --primary-gradient: linear-gradient(135deg, #0078ff 0%, #00c6ff 100%);
+            
+            --steel-gray: #c9d1d9;
+            --steel-blue: #58a6ff;
+            --steel-bright: #f0f6fc;
+            
+            --success: #39d353;
+            --danger: #ff7b72;
+            --warning: #f1e05a;
+            
+            --font-vazir: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-outfit: 'Outfit', 'Inter', sans-serif;
+        }
+
+        /* Global Reset & Base Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+        }
+
+        body {
+            background-color: var(--bg-metal);
+            font-family: var(--font-vazir);
+            color: var(--steel-gray);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Utilities */
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-metal);
+            border-radius: 12px;
+        }
+
+        .text-gradient-steel {
+            background: linear-gradient(135deg, #f0f6fc 0%, #8b949e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-gradient-blue {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Login Page Layout */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top right, rgba(0, 120, 255, 0.1) 0%, transparent 60%),
+                        radial-gradient(circle at bottom left, rgba(0, 198, 255, 0.05) 0%, transparent 60%),
+                        var(--bg-metal);
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .login-logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .login-logo {
+            max-width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 15px rgba(0, 120, 255, 0.2));
+        }
+
+        .login-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: var(--steel-bright);
+        }
+
+        .login-header p {
+            font-size: 14px;
+            color: #8b949e;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #8b949e;
+            text-align: right;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b949e;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 42px 12px 14px;
+            background: rgba(13, 17, 23, 0.8);
+            border: 1px solid var(--border-metal);
+            border-radius: 8px;
+            color: var(--steel-bright);
+            font-family: var(--font-vazir);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .form-input:focus + .input-icon {
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: var(--font-vazir);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 120, 255, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: rgba(255, 123, 114, 0.1);
+            border: 1px solid rgba(255, 123, 114, 0.2);
+            color: var(--danger);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: shake 0.4s ease;
+        }
+
+        /* Dashboard Page Layout */
+        .dashboard-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border-metal);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-logo {
+            height: 38px;
+            width: auto;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-metal);
+            color: var(--steel-gray);
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 123, 114, 0.1);
+            border-color: rgba(255, 123, 114, 0.3);
+            color: var(--danger);
+        }
+
+        /* Main Stats Grid */
+        .main-content {
+            flex: 1;
+            padding: 30px 40px;
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-info h3 {
+            font-size: 13px;
+            font-weight: 500;
+            color: #8b949e;
+            margin-bottom: 4px;
+        }
+
+        .stat-number {
+            font-family: var(--font-outfit);
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--steel-bright);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-icon.total {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--steel-blue);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+        }
+
+        .stat-icon.audio {
+            background: rgba(0, 120, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(0, 120, 255, 0.2);
+        }
+
+        .stat-icon.success {
+            background: rgba(57, 211, 83, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(57, 211, 83, 0.2);
+        }
+
+        .stat-icon.duration {
+            background: rgba(241, 224, 90, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(241, 224, 90, 0.2);
+        }
+
+        /* Control Bar & Filter Actions */
+        .control-bar {
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 42px 10px 14px;
+            background: rgba(13, 17, 23, 0.6);
+            border: 1px solid var(--border-metal);
+            border-radius: 8px;
+            color: var(--steel-bright);
+            font-family: var(--font-vazir);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b949e;
+        }
+
+        .filter-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-metal);
+            border-radius: 8px;
+            color: var(--steel-gray);
+            font-family: var(--font-vazir);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-btn.active {
+            background: rgba(0, 120, 255, 0.15);
+            border-color: var(--primary);
+            color: var(--steel-bright);
+        }
+
+        /* Grid & Card layout for table elements */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .record-card {
+            padding: 20px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .record-card:hover {
+            border-color: var(--steel-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .sender-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sender-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1f6feb 0%, #58a6ff 100%);
+            color: #ffffff;
+            font-weight: 700;
+            font-family: var(--font-outfit);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .sender-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--steel-bright);
+        }
+
+        .meta-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .source-badge {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .source-badge.text {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--steel-blue);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+        }
+
+        .source-badge.voice {
+            background: rgba(163, 113, 247, 0.1);
+            color: #d2a8ff;
+            border: 1px solid rgba(163, 113, 247, 0.2);
+        }
+
+        .card-body {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--steel-bright);
+            text-align: right;
+            white-space: pre-line;
+        }
+
+        /* Highlighting custom tag terms */
+        .highlight-tag {
+            background: rgba(0, 120, 255, 0.15);
+            border: 1px solid rgba(0, 120, 255, 0.3);
+            color: var(--steel-blue);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Audio Player Section in Cards */
+        .audio-player-box {
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(13, 17, 23, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.08);
+            background: #0088ff;
+        }
+
+        .audio-track-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .audio-file-name {
+            font-family: var(--font-outfit);
+            font-size: 12px;
+            color: #8b949e;
+            text-align: left;
+        }
+
+        .audio-waveform-fallback {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-waveform-progress {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            background: var(--primary-gradient);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .audio-duration {
+            font-family: var(--font-outfit);
+            font-size: 12px;
+            color: var(--steel-blue);
+        }
+
+        /* Loading Spinner */
+        .loading-box {
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Keyframes Animations */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 16px 20px;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .control-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-box {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-metal-dark text-slate-100 font-vazir antialiased">
+    
+    <div id="app">
+        <!-- Dashboard mounting structure -->
+    </div>
+
+    <script type="module">
+        // Direct browser-native execution script
+        const VALID_USERNAME = 'admin';
+        const VALID_PASSWORD = 'aisteel2026';
+        const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/gviz/tq?tqx=out:csv&sheet=AllData';
+        
+        // Load the local relative logo path served relative to the HTML file
+        const logoUrl = 'src/assets/logo.png';
+
+        let state = {
+            isAuthenticated: localStorage.getItem('aisteel_auth') === 'true',
+            user: localStorage.getItem('aisteel_user') || '',
+            loading: false,
+            records: [],
+            searchQuery: '',
+            filterSource: 'all',
+            loginError: '',
+            activeAudio: null,
+            activeAudioId: null,
+            audioProgress: 0
+        };
+
+        function parseCSV(csvText) {
+            const lines = [];
+            let currentLine = [];
+            let insideQuote = false;
+            let currentValue = '';
+            
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                const nextChar = csvText[i+1];
+                
+                if (char === '"') {
+                    if (insideQuote && nextChar === '"') {
+                        currentValue += '"';
+                        i++;
+                    } else {
+                        insideQuote = !insideQuote;
+                    }
+                } else if (char === ',' && !insideQuote) {
+                    currentLine.push(currentValue);
+                    currentValue = '';
+                } else if ((char === '\n' || char === '\r') && !insideQuote) {
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                    currentLine.push(currentValue);
+                    lines.push(currentLine);
+                    currentLine = [];
+                    currentValue = '';
+                } else {
+                    currentValue += char;
+                }
+            }
+            if (currentValue || currentLine.length > 0) {
+                currentLine.push(currentValue);
+                lines.push(currentLine);
+            }
+            return lines;
+        }
+
+        async function fetchSheetData() {
+            state.loading = true;
+            render();
+            
+            try {
+                const response = await fetch(SPREADSHEET_CSV_URL);
+                if (!response.ok) throw new Error('خطا در بارگیری داده‌ها');
+                
+                const csvText = await response.text();
+                const parsedLines = parseCSV(csvText);
+                
+                if (parsedLines.length < 2) {
+                    state.records = [];
+                    state.loading = false;
+                    render();
+                    return;
+                }
+                
+                const headers = parsedLines[0].map(h => h.trim());
+                const rawRows = parsedLines.slice(1);
+                
+                state.records = rawRows.map(row => {
+                    const item = {};
+                    headers.forEach((h, idx) => {
+                        item[h] = row[idx] || '';
+                    });
+                    return item;
+                }).filter(item => item.ID || item.Date);
+                
+                state.records.reverse();
+                
+            } catch (error) {
+                console.error(error);
+                alert('دریافت اطلاعات گوگل شیت ناموفق بود.');
+            } finally {
+                state.loading = false;
+                render();
+            }
+        }
+
+        function highlightKeywords(text) {
+            if (!text) return '';
+            const keywords = [
+                /AiSteel/gi,
+                /تیرآهن/g,
+                /تیر آهن/g,
+                /میلگرد/g,
+                /میل گرد/g,
+                /آهن‌آلات/g,
+                /آهن آلات/g,
+                /نبشی/g,
+                /پروفیل/g,
+                /لوله/g,
+                /ریخته‌گری/g,
+                /ریخته گری/g,
+                /خرید فولاد/g
+            ];
+            
+            let highlighted = text;
+            keywords.forEach(keyword => {
+                highlighted = highlighted.replace(keyword, (match) => {
+                    return `<span class="highlight-tag">${match}</span>`;
+                });
+            });
+            
+            return highlighted;
+        }
+
+        function handleLogin(username, password) {
+            if (username.trim().toLowerCase() === VALID_USERNAME && password === VALID_PASSWORD) {
+                state.isAuthenticated = true;
+                state.user = username;
+                state.loginError = '';
+                localStorage.setItem('aisteel_auth', 'true');
+                localStorage.setItem('aisteel_user', username);
+                fetchSheetData();
+            } else {
+                state.loginError = 'نام کاربری یا رمز عبور اشتباه است!';
+                render();
+            }
+        }
+
+        function handleLogout() {
+            state.isAuthenticated = false;
+            state.records = [];
+            localStorage.removeItem('aisteel_auth');
+            localStorage.removeItem('aisteel_user');
+            if (state.activeAudio) {
+                state.activeAudio.pause();
+                state.activeAudio = null;
+                state.activeAudioId = null;
+            }
+            render();
+        }
+
+        function toggleAudio(recordId, audioFileName) {
+            if (state.activeAudioId === recordId && state.activeAudio) {
+                if (state.activeAudio.paused) {
+                    state.activeAudio.play();
+                } else {
+                    state.activeAudio.pause();
+                }
+                render();
+                return;
+            }
+            
+            if (state.activeAudio) {
+                state.activeAudio.pause();
+            }
+            
+            // Serve temp_audio folder contents served directly relative to the HTML preview file
+            const audioUrl = `temp_audio/${audioFileName}`;
+            
+            const audio = new Audio(audioUrl);
+            state.activeAudio = audio;
+            state.activeAudioId = recordId;
+            state.audioProgress = 0;
+            
+            audio.play().catch(err => {
+                alert(`فایل صوتی ${audioFileName} به صورت محلی در مسیر temp_audio قرار ندارد. برای تست پخش صدا، ابتدا ویس‌ها را از پوشه فشرده شده در temp_audio اکسترکت کنید.`);
+                state.activeAudio = null;
+                state.activeAudioId = null;
+                render();
+            });
+            
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
+                    state.audioProgress = (audio.currentTime / audio.duration) * 100;
+                    const progressEl = document.querySelector(`.progress-${recordId}`);
+                    if (progressEl) {
+                        progressEl.style.width = `${state.audioProgress}%`;
+                    }
+                }
+            });
+            
+            audio.addEventListener('ended', () => {
+                state.activeAudio = null;
+                state.activeAudioId = null;
+                state.audioProgress = 0;
+                render();
+            });
+            
+            render();
+        }
+
+        function getLoginHTML() {
+            return `
+                <div class="login-container">
+                    <div class="login-card glass-panel">
+                        <div class="login-logo-container">
+                            <img src="${logoUrl}" alt="AiSteel Logo" class="login-logo">
+                        </div>
+                        <div class="login-header">
+                            <h2>خوش آمدید</h2>
+                            <p>داشبورد یکپارچه نظارت و آنالیز داده‌های AiSteel</p>
+                        </div>
+                        
+                        \${state.loginError ? `
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>\${state.loginError}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <form id="loginForm">
+                            <div class="form-group">
+                                <label class="form-label" for="username">نام کاربری</label>
+                                <div class="input-wrapper">
+                                    <input class="form-input" type="text" id="username" placeholder="نام کاربری خود را وارد کنید" required autocomplete="username">
+                                    <i class="fas fa-user input-icon"></i>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="password">رمز عبور</label>
+                                <div class="input-wrapper">
+                                    <input class="form-input" type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                                    <i class="fas fa-lock input-icon"></i>
+                                </div>
+                            </div>
+                            <button class="btn-primary" type="submit">
+                                <span>ورود به پنل مدیریت</span>
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getDashboardHTML() {
+            const totalRecords = state.records.length;
+            const voiceRecords = state.records.filter(r => r.Source === 'Voice');
+            const successTranscripts = voiceRecords.filter(r => r['Transcription Status'] === 'Success').length;
+            
+            let totalDuration = 0;
+            voiceRecords.forEach(r => {
+                const d = parseFloat(r.Duration);
+                if (!isNaN(d)) totalDuration += d;
+            });
+            
+            const filteredRecords = state.records.filter(r => {
+                if (state.filterSource === 'text' && r.Source !== 'Text') return false;
+                if (state.filterSource === 'voice' && r.Source !== 'Voice') return false;
+                
+                if (state.searchQuery) {
+                    const query = state.searchQuery.toLowerCase();
+                    const content = (r['Raw Content'] || '').toLowerCase();
+                    const sender = (r['Created By'] || '').toLowerCase();
+                    const transcript = (r['Transcript'] || '').toLowerCase();
+                    
+                    return content.includes(query) || sender.includes(query) || transcript.includes(query);
+                }
+                return true;
+            });
+
+            return `
+                <div class="dashboard-container">
+                    <nav class="navbar glass-panel">
+                        <div class="navbar-actions">
+                            <button class="btn-icon" id="logoutBtn" title="خروج از حساب">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                            <span class="sender-name">کاربر: \${state.user}</span>
+                        </div>
+                        <div class="navbar-brand">
+                            <span class="text-gradient-steel" style="font-family: var(--font-outfit); font-weight: 800; font-size: 20px;">AiSteel Dashboard</span>
+                            <img src="\${logoUrl}" alt="AiSteel Logo" class="navbar-logo">
+                        </div>
+                    </nav>
+
+                    <main class="main-content">
+                        <section class="stats-grid">
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon total"><i class="fas fa-envelope"></i></div>
+                                <div class="stat-info">
+                                    <h3>کل پیام‌های چت</h3>
+                                    <div class="stat-number">\${totalRecords}</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon audio"><i class="fas fa-microphone"></i></div>
+                                <div class="stat-info">
+                                    <h3>فایل‌های صوتی</h3>
+                                    <div class="stat-number">\${voiceRecords.length}</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
+                                <div class="stat-info">
+                                    <h3>متنی‌سازی موفق</h3>
+                                    <div class="stat-number">\${voiceRecords.length > 0 ? Math.round((successTranscripts / voiceRecords.length) * 100) : 0}%</div>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon duration"><i class="fas fa-clock"></i></div>
+                                <div class="stat-info">
+                                    <h3>کل زمان مکالمات</h3>
+                                    <div class="stat-number">\${Math.round(totalDuration)} ثانیه</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="control-bar glass-panel">
+                            <div class="filter-actions">
+                                <button class="filter-btn \${state.filterSource === 'all' ? 'active' : ''}" id="filterAll">
+                                    <span>همه پیام‌ها</span>
+                                </button>
+                                <button class="filter-btn \${state.filterSource === 'text' ? 'active' : ''}" id="filterText">
+                                    <i class="fas fa-align-right"></i>
+                                    <span>متن خام</span>
+                                </button>
+                                <button class="filter-btn \${state.filterSource === 'voice' ? 'active' : ''}" id="filterVoice">
+                                    <i class="fas fa-microphone"></i>
+                                    <span>صداها</span>
+                                </button>
+                            </div>
+                            <div class="search-box">
+                                <input class="search-input" type="text" id="searchInput" placeholder="جستجو در پیام‌ها، ترنسکریپت‌ها یا فرستنده‌ها..." value="\${state.searchQuery}">
+                                <i class="fas fa-search search-icon"></i>
+                            </div>
+                        </section>
+
+                        \${state.loading ? `
+                            <div class="loading-box glass-panel">
+                                <div class="spinner"></div>
+                                <p>درحال واکشی و آنالیز اطلاعات گوگل شیت...</p>
+                            </div>
+                        ` : `
+                            <section class="grid-container">
+                                \${filteredRecords.length === 0 ? `
+                                    <div class="loading-box glass-panel">
+                                        <i class="fas fa-folder-open" style="font-size: 40px; color: #8b949e; margin-bottom: 12px;"></i>
+                                        <p>هیچ پیامی با فیلترها و جستجوی شما مطابقت ندارد.</p>
+                                    </div>
+                                ` : filteredRecords.map(r => getRecordCardHTML(r)).join('')}
+                            </section>
+                        `}
+                    </main>
+                </div>
+            `;
+        }
+
+        function getRecordCardHTML(r) {
+            const isVoice = r.Source === 'Voice';
+            const cleanContent = highlightKeywords(r['Raw Content']);
+            const rawTranscript = highlightKeywords(r['Transcript']);
+            const sender = r['Created By'] || 'کاربر';
+            const initials = sender.substring(0, 1).toUpperCase();
+            
+            const isPlaying = state.activeAudioId === r.ID && state.activeAudio && !state.activeAudio.paused;
+
+            return `
+                <article class="record-card glass-panel">
+                    <div class="card-header">
+                        <div class="meta-info">
+                            <span class="source-badge \${isVoice ? 'voice' : 'text'}">\${isVoice ? 'پیام صوتی' : 'پیام متنی'}</span>
+                            <span><i class="far fa-calendar-alt"></i> \${r.Date}</span>
+                            <span><i class="far fa-clock"></i> \${r.Time}</span>
+                        </div>
+                        <div class="sender-badge">
+                            <span class="sender-name">\${sender}</span>
+                            <span class="sender-avatar">\${initials}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        \${cleanContent}
+                    </div>
+                    
+                    \${isVoice && r['Audio File'] ? `
+                        <div class="audio-player-box">
+                            <span class="audio-duration">\${r.Duration} ثانیه</span>
+                            <div class="audio-track-info">
+                                <span class="audio-file-name">\${r['Audio File']}</span>
+                                <div class="audio-waveform-fallback">
+                                    <div class="audio-waveform-progress progress-\${r.ID}" style="width: \${state.activeAudioId === r.ID ? state.audioProgress : 0}%"></div>
+                                </div>
+                            </div>
+                            <button class="play-btn" onclick="window.toggleAudio('\${r.ID}', '\${r['Audio File']}')">
+                                <i class="fas \${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                            </button>
+                        </div>
+                        
+                        \${r['Transcription Status'] === 'Success' && rawTranscript ? `
+                            <div class="card-body" style="margin-top: 12px; font-size: 13px; color: #8b949e; border-top: 1px dashed var(--border-metal); padding-top: 10px;">
+                                <strong><i class="fas fa-quote-right" style="font-size: 10px; margin-left: 4px;"></i> متن ترنسکریپت خام:</strong><br>
+                                \${rawTranscript}
+                            </div>
+                        ` : ''}
+                    \${r['Transcription Status'] !== 'Success' && r['Transcription Status'] !== 'N/A' ? `
+                        <div class="error-message" style="margin-top: 12px; margin-bottom: 0; padding: 6px 12px; font-size: 12px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>متنی‌سازی ناموفق: \${r['Transcription Status']}</span>
+                        </div>
+                    ` : ''}
+                    ` : ''}
+                </article>
+            `;
+        }
+
+        function render() {
+            const appEl = document.getElementById('app');
+            if (!appEl) return;
+            
+            if (!state.isAuthenticated) {
+                appEl.innerHTML = getLoginHTML();
+                
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const username = document.getElementById('username').value;
+                        const password = document.getElementById('password').value;
+                        handleLogin(username, password);
+                    });
+                }
+            } else {
+                appEl.innerHTML = getDashboardHTML();
+                
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', handleLogout);
+                }
+                
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        state.searchQuery = e.target.value;
+                        render();
+                        const inp = document.getElementById('searchInput');
+                        if (inp) {
+                            inp.focus();
+                            inp.setSelectionRange(inp.value.length, inp.value.length);
+                        }
+                    });
+                }
+                
+                const filterAll = document.getElementById('filterAll');
+                const filterText = document.getElementById('filterText');
+                const filterVoice = document.getElementById('filterVoice');
+                
+                if (filterAll) filterAll.addEventListener('click', () => { state.filterSource = 'all'; render(); });
+                if (filterText) filterText.addEventListener('click', () => { state.filterSource = 'text'; render(); });
+                if (filterVoice) filterVoice.addEventListener('click', () => { state.filterSource = 'voice'; render(); });
+            }
+        }
+
+        window.toggleAudio = toggleAudio;
+
+        function initApp() {
+            render();
+            if (state.isAuthenticated) {
+                fetchSheetData();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+        initApp();
+    </script>
+</body>
+</html>
