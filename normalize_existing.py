@@ -6,6 +6,7 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
 from normalization_layer import normalize_text
+from sheet_guard import safe_worksheet, SheetWriteProtectionError
 
 # Initialize colorama
 init(autoreset=True)
@@ -38,8 +39,8 @@ def run_backfill():
         creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_url(SPREADSHEET_URL)
-        sheet = spreadsheet.worksheet(SHEET_NAME)
-        print(Fore.GREEN + f"[+] Connected to: {spreadsheet.title} -> {sheet.title}")
+        sheet = safe_worksheet(spreadsheet, SHEET_NAME)
+        print(Fore.GREEN + f"[+] Connected to: {spreadsheet.title} -> {sheet.title} [PROTECTED]")
     except Exception as e:
         print(Fore.RED + f"[-] Connection failed: {e}")
         return

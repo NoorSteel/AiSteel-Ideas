@@ -11,6 +11,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
 from normalization_layer import normalize_text
+from sheet_guard import safe_worksheet, SheetWriteProtectionError
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -444,8 +445,8 @@ def process_files():
         creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_url(SPREADSHEET_URL)
-        sheet = spreadsheet.worksheet(SHEET_NAME)
-        logger.info(Fore.GREEN + f"Connected successfully to spreadsheet: '{spreadsheet.title}' -> worksheet: '{sheet.title}'")
+        sheet = safe_worksheet(spreadsheet, SHEET_NAME)
+        logger.info(Fore.GREEN + f"Connected successfully to spreadsheet: '{spreadsheet.title}' -> worksheet: '{sheet.title}' [PROTECTED]")
     except Exception as e:
         logger.error(Fore.RED + f"Failed to connect to Google Sheets: {e}")
         return

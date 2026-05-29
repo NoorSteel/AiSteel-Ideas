@@ -7,6 +7,7 @@ import gspread
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from colorama import init, Fore, Style
+from sheet_guard import safe_worksheet, SheetWriteProtectionError
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):
@@ -143,8 +144,8 @@ def clean_google_sheets():
         creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_url(SPREADSHEET_URL)
-        sheet = spreadsheet.worksheet(SHEET_NAME)
-        print(Fore.GREEN + f"[+] Connected to: {spreadsheet.title} -> {sheet.title}")
+        sheet = safe_worksheet(spreadsheet, SHEET_NAME)
+        print(Fore.GREEN + f"[+] Connected to: {spreadsheet.title} -> {sheet.title} [PROTECTED]")
     except Exception as e:
         print(Fore.RED + f"[-] Connection failed: {e}")
         return
@@ -235,22 +236,16 @@ def clean_google_sheets():
         print(Fore.GREEN + "\n[+] Congratulations! The Google Sheet is already fully clean. No edits needed.")
         return
         
-    # Write back clean data
-    try:
-        print("\n[*] Uploading clean data set to Google Sheets...")
-        # Clear sheet first
-        sheet.clear()
-        
-        # Write back the kept rows
-        # Use gspread update with dynamic range e.g. A1:Z[len]
-        col_end_letter = gspread.utils.rowcol_to_a1(1, len(headers))[1:] # Get column letter, like 'Z'
-        range_to_update = f"A1:{col_end_letter}{len(kept_rows)}"
-        
-        sheet.update(range_to_update, kept_rows, value_input_option='USER_ENTERED')
-        print(Fore.GREEN + f"[+] Safely synchronized Google Sheets! {deleted_count} meaningless rows deleted.")
-    except Exception as e:
-        print(Fore.RED + f"[-] Error writing back to sheet: {e}")
-        print(Fore.YELLOW + f"[!] Please restore from backup file: {backup_file}")
+    # ── DELETION PERMANENTLY DISABLED ────────────────────────────────────
+    # cleanup_sheets.py used to clear the sheet and rewrite only kept rows.
+    # This is now BLOCKED by SheetGuard policy:
+    #   "No code may delete rows from Google Sheets."
+    # Filtering is handled exclusively in the frontend (App.jsx / local_preview.html).
+    # ─────────────────────────────────────────────────────────────────────
+    print(Fore.YELLOW + "\n[!] WRITE-BACK BLOCKED: Sheet deletion is disabled by SheetGuard policy.")
+    print(Fore.YELLOW + "    The analysis above is for information only.")
+    print(Fore.GREEN  + "    All filtering is handled in the frontend dashboard.")
+    print(Fore.CYAN   + f"    Backup was still saved to: {backup_file}")
 
 if __name__ == "__main__":
     clean_google_sheets()
