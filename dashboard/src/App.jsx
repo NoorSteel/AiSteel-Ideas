@@ -108,27 +108,22 @@ export default function App() {
   const fetchSheetData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(SPREADSHEET_CSV_URL);
-      if (!response.ok) throw new Error('خطا در بارگیری داده‌ها از گوگل شیت');
+      const response = await fetch('/api/records');
+      if (!response.ok) throw new Error('خطا در بارگیری داده‌ها از وب‌سرویس داشبورد');
       
-      const csvText = await response.text();
-      const parsedLines = parseCSV(csvText);
+      const data = await response.json();
       
-      if (parsedLines.length < 2) {
-        setRecords([]);
-        setLoading(false);
-        return;
+      if (data.error) {
+        throw new Error(data.error);
       }
       
-      const headers = parsedLines[0].map(h => h.trim());
-      const rawRows = parsedLines.slice(1);
-      
-      const parsedRecords = rawRows.map(row => {
-        const item = {};
-        headers.forEach((h, idx) => {
-          item[h] = row[idx] || '';
+      // Map JSON properties to ensure all expected properties map perfectly
+      const parsedRecords = data.map(item => {
+        const mapped = {};
+        Object.keys(item).forEach(key => {
+          mapped[key] = item[key] !== null && item[key] !== undefined ? String(item[key]) : '';
         });
-        return item;
+        return mapped;
       }).filter(item => item.ID || item.Date);
       
       // Reverse chronological order (latest messages at top)
@@ -137,7 +132,7 @@ export default function App() {
       
     } catch (error) {
       console.error(error);
-      alert('دریافت اطلاعات گوگل شیت ناموفق بود.');
+      alert('دریافت اطلاعات گوگل شیت ناموفق بود: ' + error.message);
     } finally {
       setLoading(false);
     }

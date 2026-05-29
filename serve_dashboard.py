@@ -1,12 +1,26 @@
 import os
 import sys
+import json
 import http.server
 import socketserver
 import webbrowser
+import gspread
 from threading import Timer
+from google.oauth2.service_account import Credentials
 
 PORT = 8000
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+CREDENTIALS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/edit"
+SHEET_NAME = "AllData"
+
+def fetch_sheet_records_via_api():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url(SPREADSHEET_URL).worksheet(SHEET_NAME)
+    records = sheet.get_all_records()
+    return records
 
 class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -24,6 +38,25 @@ class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 with open(root_preview, "rb") as f:
                     self.wfile.write(f.read())
                 return
+
+        # Serve the Google Sheet records securely as JSON
+        if self.path == "/api/records":
+            try:
+                records = fetch_sheet_records_via_api()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")  # Support dev CORS
+                self.end_headers()
+                self.wfile.write(json.dumps(records, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                error_response = {"error": str(e)}
+                self.wfile.write(json.dumps(error_response).encode("utf-8"))
+            return
+
         # Support Vite path mapping in fallback mode
         if self.path.startswith("/src/") or self.path.startswith("/assets/"):
             pass
