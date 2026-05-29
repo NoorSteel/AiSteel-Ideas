@@ -1,9 +1,9 @@
 import './style.css';
-import logoUrl from './assets/logo.png';
+
 
 // Credentials Configuration
-const VALID_USERNAME = 'admin';
-const VALID_PASSWORD = 'aisteel2026';
+const VALID_USERNAME = 'dashboardUser';
+const VALID_PASSWORD = 'SecurePass123!';
 
 // Google Sheets CSV Export URL
 const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/gviz/tq?tqx=out:csv&sheet=AllData';
@@ -231,7 +231,7 @@ function getLoginHTML() {
         <div class="login-container">
             <div class="login-card glass-panel">
                 <div class="login-logo-container">
-                    <img src="${logoUrl}" alt="AiSteel Logo" class="login-logo">
+
                 </div>
                 <div class="login-header">
                     <h2>خوش آمدید</h2>
@@ -313,7 +313,7 @@ function getDashboardHTML() {
                 </div>
                 <div class="navbar-brand">
                     <span class="text-gradient-steel" style="font-family: var(--font-outfit); font-weight: 800; font-size: 20px;">AiSteel Dashboard</span>
-                    <img src="${logoUrl}" alt="AiSteel Logo" class="navbar-logo">
+
                 </div>
             </nav>
 

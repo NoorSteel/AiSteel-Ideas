@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // Credentials Configuration
-const VALID_USERNAME = 'admin';
-const VALID_PASSWORD = 'aisteel2026';
+const VALID_USERNAME = 'dashboardUser';
+const VALID_PASSWORD = 'SecurePass123!';
 
 // Google Sheets CSV Export URL
 const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/gviz/tq?tqx=out:csv&sheet=AllData';
@@ -325,7 +325,7 @@ export default function App() {
         </button>
         <div className="login-card glass-panel">
           <div className="login-logo-container">
-            <img src={logoUrl} alt="AiSteel Logo" className="login-logo" />
+
           </div>
           <div className="login-header">
             <h2>خوش آمدید</h2>
@@ -397,7 +397,7 @@ export default function App() {
         </div>
         <div className="navbar-brand">
           <span className="text-gradient-steel" style={{ fontFamily: 'var(--font-outfit)', fontWeight: 800, fontSize: '20px' }}>AiSteel Dashboard</span>
-          <img src={logoUrl} alt="AiSteel Logo" className="navbar-logo" />
+
         </div>
       </nav>
 
