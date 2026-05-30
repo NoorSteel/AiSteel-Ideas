@@ -3,11 +3,11 @@
   "outputDirectory": "dashboard/dist",
   "functions": {
     "api/records.py": {
-      "runtime": "python3.11"
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/api/records", "destination": "/api/records" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
