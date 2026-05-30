@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // Credentials Configuration
-const VALID_USERNAME = 'dashboarduser';
+const VALID_USERNAME = 'dashboardUser';
 const VALID_PASSWORD = 'SecurePass123!';
 
 // Google Sheets CSV Export URL
 const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/19C4vdoFIlMQGhAyUmYjaoSatU-jQPy4BJIpoXbMZkEM/gviz/tq?tqx=out:csv&sheet=AllData';
+
+// Placeholder for undefined logoUrl to prevent reference crashes
+const logoUrl = '';
 
 // Custom CSV Parser supporting quotes and line breaks
 function parseCSV(csvText) {
@@ -190,6 +193,8 @@ export default function App() {
   const fetchSheetData = async () => {
     setLoading(true);
     try {
+      /* 
+      // ── پایتون / وب‌سرویس فعلاً کامنت شد ──
       const response = await fetch('/api/records');
       if (!response.ok) throw new Error('خطا در بارگیری داده‌ها از وب‌سرویس داشبورد');
       
@@ -199,7 +204,6 @@ export default function App() {
         throw new Error(data.error);
       }
       
-      // Map JSON properties to ensure all expected properties map perfectly
       const parsedRecords = data.map(item => {
         const mapped = {};
         Object.keys(item).forEach(key => {
@@ -207,14 +211,44 @@ export default function App() {
         });
         return mapped;
       }).filter(item => (item.ID || item.Date) && !isMeaninglessMessage(item['Raw Content']));
+      */
+
+      // ── دریافت مستقیم اطلاعات از فایل CSV گوگل شیت ──
+      const response = await fetch(SPREADSHEET_CSV_URL);
+      if (!response.ok) throw new Error('خطا در دریافت مستقیم فایل CSV از گوگل شیت');
       
-      // Reverse chronological order (latest messages at top)
+      const csvText = await response.text();
+      const csvLines = parseCSV(csvText);
+      
+      if (csvLines.length < 2) {
+        throw new Error('داده‌ای در جدول گوگل شیت یافت نشد یا جدول خالی است.');
+      }
+      
+      const headers = csvLines[0];
+      const parsedRecords = [];
+      
+      for (let i = 1; i < csvLines.length; i++) {
+        const row = csvLines[i];
+        // نادیده گرفتن رکوردهای خالی
+        if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+        
+        const mapped = {};
+        headers.forEach((header, index) => {
+          mapped[header] = row[index] !== null && row[index] !== undefined ? String(row[index]) : '';
+        });
+        
+        if ((mapped.ID || mapped.Date) && !isMeaninglessMessage(mapped['Raw Content'])) {
+          parsedRecords.push(mapped);
+        }
+      }
+      
+      // مرتب‌سازی برعکس (آخرین پیام‌ها در بالا)
       parsedRecords.reverse();
       setRecords(parsedRecords);
       
     } catch (error) {
       console.error(error);
-      alert('دریافت اطلاعات گوگل شیت ناموفق بود: ' + error.message);
+      alert('دریافت مستقیم اطلاعات گوگل شیت ناموفق بود: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -222,7 +256,7 @@ export default function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (usernameInput.trim() === 'dashboardUser' && passwordInput === VALID_PASSWORD) {
+    if (usernameInput.trim().toLowerCase() === VALID_USERNAME && passwordInput === VALID_PASSWORD) {
       setIsAuthenticated(true);
       setUser(usernameInput);
       setLoginError('');
@@ -397,7 +431,7 @@ export default function App() {
         </div>
         <div className="navbar-brand">
           <span className="text-gradient-steel" style={{ fontFamily: 'var(--font-outfit)', fontWeight: 800, fontSize: '20px' }}>AiSteel Dashboard</span>
-
+          {logoUrl && <img src={logoUrl} alt="AiSteel Logo" className="navbar-logo" />}
         </div>
       </nav>
 
