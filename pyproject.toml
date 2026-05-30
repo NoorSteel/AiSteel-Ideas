@@ -1,2 +1,11 @@
+[project]
+name = "aisteel-api"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "gspread>=5.10.0",
+    "google-auth>=2.20.0",
+]
+
 [tool.vercel]
 entrypoint = "api.records:handler"
