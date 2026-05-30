@@ -1,6 +1,12 @@
+# Core dependencies (used by main.py locally)
 gspread>=5.10.0
 google-auth>=2.20.0
 colorama>=0.4.6
-openai-whisper>=20231117
 openai>=1.30.0
 python-dotenv>=1.0.0
+fastapi>=0.110.0
+
+# NOTE: openai-whisper and torch are intentionally excluded here
+# because they are too large for Vercel's serverless environment.
+# Install them manually locally with:
+#   pip install openai-whisper torch

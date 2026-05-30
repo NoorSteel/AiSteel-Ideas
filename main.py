@@ -1,3 +1,14 @@
+# ── Vercel / WSGI entry-point (must be before heavy local imports) ──
+try:
+    from fastapi import FastAPI
+    app = FastAPI()
+
+    @app.get("/")
+    def _root():
+        return {"status": "AiSteel pipeline – run locally only"}
+except Exception:
+    pass
+
 import os
 import re
 import uuid
@@ -7,12 +18,38 @@ import logging
 import zipfile
 import sys
 from datetime import datetime
-import gspread
-from google.oauth2.service_account import Credentials
-from colorama import init, Fore, Style
-from normalization_layer import normalize_text
-from sheet_guard import safe_worksheet, SheetWriteProtectionError
 import time
+
+try:
+    import gspread
+except ImportError:
+    gspread = None
+
+try:
+    from google.oauth2.service_account import Credentials
+except ImportError:
+    Credentials = None
+
+try:
+    from colorama import init, Fore, Style
+    init(autoreset=True)
+except ImportError:
+    class _Dummy:
+        def __getattr__(self, _): return ""
+    Fore = Style = _Dummy()
+    def init(**_): pass
+
+try:
+    from normalization_layer import normalize_text
+except ImportError:
+    def normalize_text(t): return t
+
+try:
+    from sheet_guard import safe_worksheet, SheetWriteProtectionError
+except ImportError:
+    def safe_worksheet(sp, name): return sp.worksheet(name)
+    class SheetWriteProtectionError(Exception): pass
+
 
 try:
     from dotenv import load_dotenv
@@ -730,3 +767,12 @@ def process_files():
 
 if __name__ == "__main__":
     process_files()
+
+# Vercel serverless entrypoint
+from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"message": "AiSteel API is running"}
+

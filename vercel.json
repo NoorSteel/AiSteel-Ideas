@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd dashboard && npm install && npm run build",
+  "outputDirectory": "dashboard/dist",
+  "functions": {
+    "api/records.py": {
+      "runtime": "python3.11"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/records", "destination": "/api/records" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
