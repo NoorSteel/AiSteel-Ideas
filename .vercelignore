@@ -1,0 +1,29 @@
+# ─── Local bot scripts (not needed on Vercel) ───────────────────────────────
+main.py
+classify_categories.py
+cleanup_sheets.py
+node1.py
+normalization_layer.py
+normalize_existing.py
+phase3_enrich.py
+restore_and_normalize.py
+restore_full_original.py
+serve_dashboard.py
+sheet_guard.py
+
+# ─── Local data / runtime dirs ───────────────────────────────────────────────
+logs/
+input/
+processed/
+failed/
+temp_audio/
+__pycache__/
+
+# ─── Sensitive / local-only files ────────────────────────────────────────────
+credentials.json
+.env
+*.log
+*.txt
+backup_*.json
+local_preview.html
+web_dashboard/
