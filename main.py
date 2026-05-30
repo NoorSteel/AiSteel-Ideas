@@ -59,9 +59,11 @@ except ImportError:
 
 try:
     from openai import OpenAI
-    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-except ImportError:
+    _api_key = os.environ.get("OPENAI_API_KEY")
+    openai_client = OpenAI(api_key=_api_key) if _api_key else None
+except Exception:
     openai_client = None
+
 
 # Force stdout and stderr to use UTF-8 on Windows to prevent UnicodeEncodeError in cmd/powershell
 if sys.platform.startswith("win"):

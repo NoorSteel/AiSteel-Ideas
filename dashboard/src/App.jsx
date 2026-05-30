@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // Credentials Configuration
-const VALID_USERNAME = 'dashboardUser';
+const VALID_USERNAME = 'dashboarduser';
 const VALID_PASSWORD = 'SecurePass123!';
 
 // Google Sheets CSV Export URL
@@ -222,7 +222,7 @@ export default function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (usernameInput.trim().toLowerCase() === VALID_USERNAME && passwordInput === VALID_PASSWORD) {
+    if (usernameInput.trim() === 'dashboardUser' && passwordInput === VALID_PASSWORD) {
       setIsAuthenticated(true);
       setUser(usernameInput);
       setLoginError('');
